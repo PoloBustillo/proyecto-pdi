@@ -2,10 +2,10 @@ object Form1: TForm1
   Left = 460
   Height = 532
   Top = 337
-  Width = 746
+  Width = 900
   Caption = 'Acceso-Scanline'
   ClientHeight = 532
-  ClientWidth = 746
+  ClientWidth = 900
   Constraints.MinWidth = 900
   Menu = MainMenu1
   OnCreate = FormCreate
@@ -13,7 +13,7 @@ object Form1: TForm1
     Left = 0
     Height = 21
     Top = 511
-    Width = 746
+    Width = 900
     Panels = <    
       item
         Alignment = taCenter
@@ -87,10 +87,10 @@ object Form1: TForm1
     Visible = False
   end
   object Chart1: TChart
-    Left = 424
-    Height = 200
-    Top = 56
-    Width = 300
+    Left = 440
+    Height = 312
+    Top = 0
+    Width = 444
     AxisList = <    
       item
         Marks.LabelBrush.Style = bsClear
@@ -99,9 +99,16 @@ object Form1: TForm1
         Title.LabelBrush.Style = bsClear
       end    
       item
+        Intervals.NiceSteps = '1'
         Alignment = calBottom
         Marks.LabelBrush.Style = bsClear
+        Marks.Range.Max = 5
+        Marks.Range.UseMax = True
+        Marks.Range.UseMin = True
         Minors = <>
+        Range.Max = 5
+        Range.UseMax = True
+        Range.UseMin = True
         Title.LabelBrush.Style = bsClear
       end>
     Title.Text.Strings = (
@@ -111,14 +118,14 @@ object Form1: TForm1
       Title = 'R'
       LinePen.Color = clRed
     end
-    object Chart1LineSeries2: TLineSeries
-      Title = 'G'
+    object Chart1BarSeries1: TBarSeries
+      BarBrush.Color = clRed
     end
-    object Chart1LineSeries3: TLineSeries
-      Title = 'B'
+    object Chart1BarSeries2: TBarSeries
+      BarBrush.Color = clRed
     end
-    object Chart1LineSeries4: TLineSeries
-      Title = 'Intensidad'
+    object Chart1BarSeries3: TBarSeries
+      BarBrush.Color = clRed
     end
   end
   object MainMenu1: TMainMenu
@@ -153,5 +160,8 @@ object Form1: TForm1
   object OpenPictureDialog1: TOpenPictureDialog
     Filter = 'Imagenes (*.bmp)|*.bmp'
     Left = 288
+  end
+  object SavePictureDialog1: TSavePictureDialog
+    Left = 328
   end
 end

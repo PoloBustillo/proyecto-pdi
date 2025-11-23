@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Menus, ComCtrls,
-  ExtCtrls, ExtDlgs, StdCtrls, TAGraph, TASeries, Math;
+  ExtCtrls, ExtDlgs, StdCtrls, TAGraph, TASeries, TAChartUtils, Math;
 
 type
 
@@ -21,9 +21,9 @@ type
   TForm1 = class(TForm)
     Chart1: TChart;
     Chart1LineSeries1: TLineSeries;
-    Chart1LineSeries2: TLineSeries;
-    Chart1LineSeries3: TLineSeries;
-    Chart1LineSeries4: TLineSeries;
+    Chart1BarSeries1: TBarSeries;
+    Chart1BarSeries2: TBarSeries;
+    Chart1BarSeries3: TBarSeries;
     Image1: TImage;
     MainMenu1: TMainMenu;
     MenuItem1: TMenuItem;
@@ -35,6 +35,7 @@ type
     MenuItem7: TMenuItem;
     MenuItem8: TMenuItem;
     OpenPictureDialog1: TOpenPictureDialog;
+    SavePictureDialog: TSavePictureDialog;
     ScrollBox1: TScrollBox;
     StatusBar1: TStatusBar;
     Shape1: TShape;
@@ -43,8 +44,11 @@ type
     procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer
       );
     procedure hideLabelShape(Sender: TObject);
+    //procedure callGenerate
     procedure MenuItem2Click(Sender: TObject); // Abrir imagen
+    procedure MenuItem4Click(Sender: TObject); // generar histograma
     procedure MenuItem6Click(Sender: TObject); // Botón de escala de grises
+    //procedure MenuItem7Click(Sender: TObject); // HSV
     procedure MenuItem8Click(Sender: TObject); // Botón de restaurar
   private
 
@@ -53,19 +57,24 @@ type
     //procedure copiaItoM(Al,An: Integer; B: Tbitmap;  var M:RGB_MATRIX);   //copiar de bitmap a matriz con scanline
     //procedure copiaMtoI(Al,An: Integer; M:RGB_MATRIX; var B:Tbitmap  );   //copiar de matriz a la imagen con scanline
 
-    // Procedimiento para copiar una imagen a una matriz
-    procedure copyImageToMatrix(imageHeight, imageWidth: Integer; B: TBitmap; var matrix:RGB_MATRIX);
-
-    // Procedimiento para copiar una matriz a una imagen
-    procedure copyMatrixToImage(imageHeight, imageWidth: Integer; matrix:RGB_MATRIX; var B:TBitmap);
-
     // Procedimiento para convertir un valor de RGB a HSV
     procedure RGBToHSVByte(r, g, b: Byte; out Hb, Sb, Vb: Byte);
-    procedure RGBMatrixToHSVMatrix(imageHeight, imageWidth: Integer; const RGB: RGB_MATRIX; var HSV: HSV_MATRIX);
+    // Copiar una imagen a una matriz
+    procedure copyImageToMatrix(imageHeight, imageWidth: Integer; B: TBitmap; var matrix:RGB_MATRIX);
 
-    // Histograma y grises
+    // Copiar una matriz a una imagen
+    procedure copyMatrixToImage(imageHeight, imageWidth: Integer; matrix: RGB_MATRIX; var B: TBitmap);
+
+
+    // RGB a HSV
+    procedure RGBMatrixToHSVMatrix(imageHeight, imageWidth: Integer; const RGB: RGB_MATRIX; var HSV: HSV_MATRIX);
+    // HSV a RGB
+    //procedure HSVMatrixToRGBMatrix(imageHeight, imageWidth: Integer; const HSV: HSV_MATRIX; var RGB: RGB_MATRIX);
+    // Escala de grises
     procedure mediumRangeGrayScale(imageHeight, imageWidth: Integer; var matrix: RGB_MATRIX; var CONVERTED_GRAY_MATRIX: RGB_MATRIX; B: TBitmap);
-//    procedure generateHistogram;
+    //Generar histograma
+    procedure generateHistogram(imageHeight, imageWidth: Integer; const matrix: RGB_MATRIX);
+
   end;
 
 var
@@ -73,7 +82,7 @@ var
 
   HEIGHT, WIDTH, COLOR_MODE: Integer;
   //MAT: RGB_MATRIX ;  //del tipo propio para alamacenar R,G,B
-  MATRIX: RGB_MATRIX;
+  MATRIX, ORIGINAL_MATRIX: RGB_MATRIX;
   CONVERTED_HSV_MATRIX:  HSV_MATRIX;
   GRAY_SCALE_VALUES: GRAY_SCALE_MATRIX;
   CONVERTED_GRAY_MATRIX: RGB_MATRIX;
@@ -94,8 +103,6 @@ begin
   begin
     B.BeginUpdate;
     P := B.ScanLine[i];
-    B.EndUpdate;
-
     for j := 0 to imageWidth - 1 do
     begin
       k:= 3 * j;
@@ -104,6 +111,7 @@ begin
       matrix[j, i, 2] := P [k + 0]; // B
     end; // j
   end; // i
+  B.EndUpdate;
 end;
 
 procedure TForm1.copyMatrixToImage(imageHeight, imageWidth: Integer; matrix:RGB_MATRIX; var B:TBitmap);
@@ -115,7 +123,6 @@ begin
   begin
     B.BeginUpdate;
     P:= B.ScanLine[i];
-    B.EndUpdate;
     for j:=0 to imageWidth - 1 do
     begin
       k:= 3 * j;
@@ -123,6 +130,7 @@ begin
       P[k + 1]:= matrix[j, i, 1]; // G
       P[k + 0]:= matrix[j, i, 2]; // B
     end; // j
+    B.EndUpdate;
   end; // i
 
   // HEIGHT := B.Height;
@@ -204,6 +212,7 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
    BMAP:=Tbitmap.Create;  //Instanciar-crear objeto de la clase Tbitmap
    Image1.OnMouseLeave := @hideLabelShape;
+//   MenuItem4.OnClick := @generateHistogram;
    COLOR_MODE := 0;
 end;
 
@@ -211,6 +220,8 @@ end;
 procedure TForm1.Image1MouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
+  if (X < 0) or (X >= WIDTH) or (Y < 0) or (Y >= HEIGHT) then Exit;
+  if (WIDTH = 0) or (HEIGHT = 0) then Exit;
   
   StatusBar1.Panels[1].Text:=IntToStr(X);
   StatusBar1.Panels[2].Text:=IntToStr(Y);
@@ -240,15 +251,15 @@ begin
   SetLength(CONVERTED_GRAY_MATRIX, imageWidth, imageHeight, 3);
 
   // Opcional: Si también necesitas la matriz de solo valores de gris (1 canal)
-  //SetLength(GRAY_SCALE_VALUES, imageWidth, imageHeight);
+  SetLength(GRAY_SCALE_VALUES, imageWidth, imageHeight);
 
   for i := 0 to imageWidth - 1 do
   begin
     for j := 0 to imageHeight - 1 do
     begin
-      red   := matrix[i, j, 0];
+      red := matrix[i, j, 0];
       green := matrix[i, j, 1];
-      blue  := matrix[i, j, 2];
+      blue := matrix[i, j, 2];
 
       // Rango Medio
       maximumValue := Max(red, Max(green, blue));
@@ -288,13 +299,28 @@ begin
      begin
       BMAP.PixelFormat:=pf24bit;
      end;
+
      StatusBar1.Panels[6].Text:=IntToStr(HEIGHT)+'x'+IntToStr(WIDTH);
      SetLength(MATRIX,WIDTH,HEIGHT,3);
-     copyImageToMatrix(HEIGHT,WIDTH,BMAP,MATRIX);  //copiar (TPicture)contenido de bitmap a MAT
-     Image1.Picture.Assign(BMAP);  //visulaizar imagen
+     SetLength(ORIGINAL_MATRIX,WIDTH,HEIGHT,3);
+     copyImageToMatrix(HEIGHT, WIDTH, BMAP, MATRIX);  //copiar (TPicture)contenido de bitmap a MAT
+     copyImageToMatrix(HEIGHT, WIDTH, BMAP, ORIGINAL_MATRIX); // respaldar matriz
+
+     Image1.Picture.Assign(BMAP);  //ver imagen
      RGBMatrixToHSVMatrix(HEIGHT, WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
      COLOR_MODE := 1
   end;
+end;
+procedure TForm1.MenuItem4Click(Sender: TObject);
+begin
+  if WIDTH > 0 then
+  begin
+   generateHistogram(HEIGHT, WIDTH, MATRIX);
+   Chart1.Visible := True;
+   ShowMessage('Histograma generado');
+  end
+  else
+  ShowMessage('Primero carga una imagen');
 end;
 
 procedure TForm1.MenuItem6Click(Sender: TObject);
@@ -310,11 +336,76 @@ begin
 end;
 
 procedure TForm1.MenuItem8Click(Sender: TObject);
+var
+  i, j, k: Integer;
 begin
-  SetLength(MATRIX,WIDTH,HEIGHT,3);
-  copyMatrixToImage(HEIGHT, WIDTH, MATRIX, BMAP);  //copiar (TPicture)contenido de bitmap a MAT
-  Image1.Picture.Assign(BMAP);  //visulaizar imagen
-  COLOR_MODE := 1
+  if WIDTH > 0 then
+  begin
+   copyMatrixToImage(HEIGHT, WIDTH, ORIGINAL_MATRIX, BMAP);
+
+   SetLength(MATRIX,WIDTH,HEIGHT,3);
+   //copyMatrixToImage(HEIGHT, WIDTH, MATRIX, BMAP);  //copiar (TPicture)contenido de bitmap a MAT
+   for i := 0 to WIDTH - 1 do
+    begin
+      for j := 0 to HEIGHT - 1 do
+       begin
+         for k := 0 to 2 do
+          MATRIX[i, j, k] := ORIGINAL_MATRIX[i, j, k];
+       end;
+    end;
+
+   Image1.Picture.Assign(BMAP);  //visulaizar imagen
+   RGBMatrixToHSVMatrix(HEIGHT, WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+   COLOR_MODE := 1;
+   ShowMessage('Imagen restaurada');
+  end
+  else
+   ShowMessage('No hay imagen para restaurar');
+end;
+
+procedure TForm1.generateHistogram(imageHeight, imageWidth: Integer; const matrix: RGB_MATRIX);
+var
+  x, y, i: Integer;
+  histR, histG, histB, histI: Array [0..255] of Integer;
+  r, g, b, intensity: Byte;
+begin
+  for i := 0 to 255 do
+  begin
+    histR[i] := 0;
+    histG[i] := 0;
+    histB[i] := 0;
+    histI[i] := 0;
+  end;
+
+  for x := 0 to imageWidth -1 do
+  begin
+    for y := 0 to imageHeight -1 do
+    begin
+      r := matrix[x, y, 0];
+      g := matrix[x, y, 1];
+      b := matrix[x, y, 2];
+
+      Inc(histR[r]);
+      Inc(histG[g]);
+      Inc(histB[b]);
+
+      intensity := (r +g +b) div 3;
+      Inc(histI[intensity]);
+    end;
+  end;
+
+  Chart1BarSeries1.Clear;
+  Chart1BarSeries2.Clear;
+  Chart1BarSeries3.Clear;
+  Chart1LineSeries1.Clear;
+
+  for i := 0 to 255 do
+  begin
+    Chart1BarSeries1.AddXY(i, histR[i]);
+    Chart1BarSeries2.AddXY(i, histG[i]);
+    Chart1BarSeries3.AddXY(i, histB[i]);
+    Chart1LineSeries1.AddXY(i, histI[i]);
+  end;
 end;
 
 end.
