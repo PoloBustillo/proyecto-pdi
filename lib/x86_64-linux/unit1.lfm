@@ -70,6 +70,12 @@ object Form1: TForm1
       OnMouseMove = Image1MouseMove
     end
   end
+  object Shape1: TShape
+    Left = 416
+    Height = 30
+    Top = 40
+    Width = 30
+  end
   object MainMenu1: TMainMenu
     Left = 512
     Top = 59

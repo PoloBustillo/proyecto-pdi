@@ -25,6 +25,7 @@ type
     OpenPictureDialog1: TOpenPictureDialog;
     ScrollBox1: TScrollBox;
     StatusBar1: TStatusBar;
+    Shape1: TShape;
     procedure FormCreate(Sender: TObject);
     procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer
       );
@@ -111,6 +112,7 @@ procedure TForm1.RGBToHSVByte(r, g, b: Byte; out Hb, Sb, Vb: Byte);
 var
   rf, gf, bf, cmax, cmin, delta, H, S, V: Double;
 begin
+  // 1. Normalizar valores RGB de 0..255 a 0..1
   rf := r / 255.0;
   gf := g / 255.0;
   bf := b / 255.0;
@@ -119,26 +121,36 @@ begin
   cmin := Min(rf, Min(gf, bf));
   delta := cmax - cmin;
 
+  // 2. Calcular Valor (V) -> Rango 0..1
   V := cmax;
 
+  // 3. Calcular Saturación (S) -> Rango 0..1
   if cmax = 0 then
     S := 0
   else
     S := delta / cmax;
 
+  // 4. Calcular Matiz (H) -> Rango 0..360 grados
   if delta = 0 then
     H := 0
-  else if cmax = rf then
-    H := 60 * ((gf - bf) / delta)
-  else if cmax = gf then
-    H := 60 * (((bf - rf) / delta) + 2)
   else
-    H := 60 * (((rf - gf) / delta) + 4);
+  begin
+    if cmax = rf then
+      H := (gf - bf) / delta
+    else if cmax = gf then
+      H := 2.0 + (bf - rf) / delta
+    else
+      H := 4.0 + (rf - gf) / delta;
 
-  if H < 0 then
-    H := H + 360;
+    H := H * 60; // Convertir a grados
+    if H < 0 then
+      H := H + 360;
+  end;
 
+  // 5. Convertir todo a Byte (0..255)
+  // H se normaliza dividiendo por 360 y multiplicando por 255
   Hb := Round((H / 360) * 255);
+  // S y V ya están entre 0 y 1, solo se multiplican por 255
   Sb := Round(S * 255);
   Vb := Round(V * 255);
 end;
@@ -182,6 +194,8 @@ begin
   StatusBar1.Panels[4].Text:= IntToStr(MATRIX[x,y,0])+','+IntToStr(MATRIX[x,y,1])+','+IntToStr(MATRIX[x,y,2]);
   StatusBar1.Panels[8].Text:= IntToStr(CONVERTED_HSV_MATRIX[x,y,0])+','+IntToStr(CONVERTED_HSV_MATRIX[x,y,1])+','+IntToStr(CONVERTED_HSV_MATRIX[x,y,2]);
 
+  // Mostrar color
+  Shape1.Brush.Color := RGBToColor(MATRIX[x, y, 0], MATRIX[x, y, 1], MATRIX[x, y, 2]);
 end;
 
 procedure TForm1.MenuItem2Click(Sender: TObject);
