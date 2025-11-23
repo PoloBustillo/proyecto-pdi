@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Menus, ComCtrls,
-  ExtCtrls, ExtDlgs, StdCtrls, Math;
+  ExtCtrls, ExtDlgs, StdCtrls, TAGraph, TASeries, Math;
 
 type
 
@@ -14,22 +14,37 @@ type
    //MATRGB= Array of Array of Array of byte;
    RGB_MATRIX = Array of Array of Array of byte;
    HSV_MATRIX = Array of Array of Array of byte;
+   GRAY_SCALE_MATRIX = Array of Array of Byte;
 
   { TForm1 }
 
   TForm1 = class(TForm)
+    Chart1: TChart;
+    Chart1LineSeries1: TLineSeries;
+    Chart1LineSeries2: TLineSeries;
+    Chart1LineSeries3: TLineSeries;
+    Chart1LineSeries4: TLineSeries;
     Image1: TImage;
     MainMenu1: TMainMenu;
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
+    MenuItem3: TMenuItem;
+    MenuItem4: TMenuItem;
+    MenuItem5: TMenuItem;
+    MenuItem6: TMenuItem;
+    MenuItem7: TMenuItem;
+    MenuItem8: TMenuItem;
     OpenPictureDialog1: TOpenPictureDialog;
     ScrollBox1: TScrollBox;
     StatusBar1: TStatusBar;
     Shape1: TShape;
+    Label1: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer
       );
+    procedure hideLabelShape(Sender: TObject);
     procedure MenuItem2Click(Sender: TObject);
+    procedure MenuItem6Click(Sender: TObject);
   private
 
   public
@@ -46,6 +61,10 @@ type
     // Procedimiento para convertir un valor de RGB a HSV
     procedure RGBToHSVByte(r, g, b: Byte; out Hb, Sb, Vb: Byte);
     procedure RGBMatrixToHSVMatrix(imageHeight, imageWidth: Integer; const RGB: RGB_MATRIX; var HSV: HSV_MATRIX);
+
+    // Histograma y grises
+    procedure mediumRangeGrayScale(imageHeight, imageWidth: Integer; var matrix: RGB_MATRIX; var GRAY_SCALE_VALUES: GRAY_SCALE_MATRIX; B: TBitmap);
+//    procedure generateHistogram;
   end;
 
 var
@@ -55,8 +74,8 @@ var
   //MAT: RGB_MATRIX ;  //del tipo propio para alamacenar R,G,B
   MATRIX: RGB_MATRIX;
   CONVERTED_HSV_MATRIX:  HSV_MATRIX;
-
-  BMAP: Tbitmap;   //para acceso a imagenes bmp
+  GRAY_SCALE_VALUES: GRAY_SCALE_MATRIX;
+  BMAP: TBitmap;   //para acceso a imagenes bmp
 
 implementation
 
@@ -72,15 +91,15 @@ begin
   for i:=0 to imageHeight - 1 do
   begin
     B.BeginUpdate;
-    P:= B.ScanLine[i];
+    P := B.ScanLine[i];
     B.EndUpdate;
 
-    for j:=0 to imageWidth - 1 do
+    for j := 0 to imageWidth - 1 do
     begin
       k:= 3 * j;
-      matrix[j, i, 0]:= P[k + 2]; // R
-      matrix[j, i, 1]:= P[k + 1]; // G
-      matrix[j, i, 2]:= P[k + 0]; // B
+      matrix[j, i, 0] := P [k + 2]; // R
+      matrix[j, i, 1] := P [k + 1]; // G
+      matrix[j, i, 2] := P [k + 0]; // B
     end; // j
   end; // i
 end;
@@ -182,7 +201,7 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
    BMAP:=Tbitmap.Create;  //Instanciar-crear objeto de la clase Tbitmap
-   Shape1.Brush.Color := RGBToColor(255, 0, 0)
+   Image1.OnMouseLeave := @hideLabelShape;
 end;
 
 
@@ -195,6 +214,60 @@ begin
   StatusBar1.Panels[4].Text:= IntToStr(MATRIX[x,y,0])+','+IntToStr(MATRIX[x,y,1])+','+IntToStr(MATRIX[x,y,2]);
   StatusBar1.Panels[8].Text:= IntToStr(CONVERTED_HSV_MATRIX[x,y,0])+','+IntToStr(CONVERTED_HSV_MATRIX[x,y,1])+','+IntToStr(CONVERTED_HSV_MATRIX[x,y,2]);
 
+  // Mostrar color
+  Label1.Visible := True;
+  Shape1.Visible := True;
+  Shape1.Brush.Color := RGBToColor(MATRIX[x, y, 0], MATRIX[x, y, 1], MATRIX[x, y, 2]);
+
+end;
+
+procedure TForm1.mediumRangeGrayScale(imageHeight, imageWidth: Integer; var matrix: RGB_MATRIX; var GRAY_SCALE_VALUES: GRAY_SCALE_MATRIX; B: TBitmap);
+var
+  i, j: Integer;
+  red, green, blue, gray: Byte; // Mejor Byte que Integer para colores (0-255)
+  minimumValue, maximumValue: Byte;
+begin
+  // 1. Validación de seguridad usando los parámetros
+  if (imageWidth = 0) or (imageHeight = 0) then Exit;
+
+  // 2. Asegurar tamaño de la matriz de grises (útil para el histograma después)
+  SetLength(GRAY_SCALE_VALUES, imageWidth, imageHeight);
+
+  for i := 0 to imageWidth - 1 do // Columnas (X)
+  begin
+    for j := 0 to imageHeight - 1 do // Filas (Y)
+    begin
+      red   := matrix[i, j, 0];
+      green := matrix[i, j, 1];
+      blue  := matrix[i, j, 2];
+
+      // Rango Medio: (Max + Min) / 2
+      maximumValue := Max(red, Max(green, blue));
+      minimumValue := Min(red, Min(green, blue));
+
+      // 'div' ya devuelve un entero, no necesitas Round
+      gray := (maximumValue + minimumValue) div 2;
+
+      // A. Guardar en la matriz de solo grises (para tus cálculos futuros)
+      GRAY_SCALE_VALUES[i, j] := gray;
+
+      // B. CORRECCIÓN: Asignar el gris a los 3 canales de la MATRIZ RGB
+      // Esto hace que la imagen se vea gris visualmente
+      matrix[i, j, 0] := gray;
+      matrix[i, j, 1] := gray;
+      matrix[i, j, 2] := gray;
+    end;
+  end;
+
+  // C. CORRECCIÓN FINAL: Pasar los datos de la matriz al Bitmap
+  // Usamos tu procedimiento existente que ya maneja ScanLine correctamente
+  copyMatrixToImage(imageHeight, imageWidth, matrix, B);
+end;
+
+procedure TForm1.hideLabelShape(Sender: TObject);
+begin
+  Label1.Visible := False;
+  Shape1.Visible := False;
 end;
 
 procedure TForm1.MenuItem2Click(Sender: TObject);
@@ -215,6 +288,18 @@ begin
      copyImageToMatrix(HEIGHT,WIDTH,BMAP,MATRIX);  //copiar (TPicture)contenido de bitmap a MAT
      Image1.Picture.Assign(BMAP);  //visulaizar imagen
      RGBMatrixToHSVMatrix(HEIGHT, WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+  end;
+end;
+
+procedure TForm1.MenuItem6Click(Sender: TObject);
+var
+  GRAY_MATRIX: GRAY_sCALE_MATRIX;
+begin
+  if (WIDTH > 0) then
+  begin
+   mediumRangeGrayScale(HEIGHT, WIDTH, MATRIX, GRAY_MATRIX, B);
+
+   Image1.Picture.Assign(B);
   end;
 end;
 
