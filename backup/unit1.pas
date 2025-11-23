@@ -210,8 +210,10 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-   BMAP:=Tbitmap.Create;  //Instanciar-crear objeto de la clase Tbitmap
-   Image1.OnMouseLeave := @hideLabelShape;
+  //WIDTH := 0;
+  //HEIGHT := 0;
+  BMAP := TBitmap.Create;  //Instanciar-crear objeto de la clase Tbitmap
+  Image1.OnMouseLeave := @hideLabelShape;
 //   MenuItem4.OnClick := @generateHistogram;
    COLOR_MODE := 0;
 end;
@@ -220,11 +222,13 @@ end;
 procedure TForm1.Image1MouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
+  if (X < 0) or (X >= WIDTH) or (Y < 0) or (Y >= HEIGHT) then Exit;
+  if (WIDTH = 0) or (HEIGHT = 0) then Exit;
   
-  StatusBar1.Panels[1].Text:=IntToStr(X);
-  StatusBar1.Panels[2].Text:=IntToStr(Y);
-  StatusBar1.Panels[4].Text:= IntToStr(MATRIX[x,y,0])+','+IntToStr(MATRIX[x,y,1])+','+IntToStr(MATRIX[x,y,2]);
-  StatusBar1.Panels[8].Text:= IntToStr(CONVERTED_HSV_MATRIX[x,y,0])+','+IntToStr(CONVERTED_HSV_MATRIX[x,y,1])+','+IntToStr(CONVERTED_HSV_MATRIX[x,y,2]);
+  StatusBar1.Panels[1].Text := IntToStr(X);
+  StatusBar1.Panels[2].Text := IntToStr(Y);
+  StatusBar1.Panels[4].Text := IntToStr(MATRIX[X,Y,0])+','+IntToStr(MATRIX[X,Y,1])+','+IntToStr(MATRIX[X,Y,2]);
+  StatusBar1.Panels[8].Text := IntToStr(CONVERTED_HSV_MATRIX[X,Y,0])+', '+IntToStr(CONVERTED_HSV_MATRIX[X,Y,1])+', '+IntToStr(CONVERTED_HSV_MATRIX[X,Y,2]);
 
   // Mostrar color
   Label1.Visible := True;
@@ -288,6 +292,11 @@ procedure TForm1.MenuItem2Click(Sender: TObject);
 begin
     if OpenPictureDialog1.Execute then
     begin
+     SetLength(MATRIX, 0, 0, 0);
+     SetLength(ORIGINAL_MATRIX, 0, 0, 0);
+     SetLength(CONVERTED_GRAY_MATRIX, 0, 0, 0);
+     SetLength(CONVERTED_HSV_MATRIX, 0, 0, 0);
+
      Image1.Enabled:=True;
      BMAP.LoadFromFile(OpenPictureDialog1.FileName);
      HEIGHT:=BMAP.Height;
@@ -311,7 +320,7 @@ begin
 end;
 procedure TForm1.MenuItem4Click(Sender: TObject);
 begin
-  if WIDTH > 0 then
+  if (WIDTH > 0) AND (HEIGHT > 0) then
   begin
    generateHistogram(HEIGHT, WIDTH, MATRIX);
    Chart1.Visible := True;
@@ -325,7 +334,7 @@ procedure TForm1.MenuItem6Click(Sender: TObject);
 var
   GRAY_MATRIX: GRAY_SCALE_MATRIX;
 begin
-  if (WIDTH > 0) then
+  if (WIDTH > 0) AND (HEIGHT > 0) then
   begin
    mediumRangeGrayScale(HEIGHT, WIDTH, MATRIX, CONVERTED_GRAY_MATRIX, BMAP);
    Image1.Picture.Assign(BMAP);
@@ -361,7 +370,7 @@ begin
    ShowMessage('No hay imagen para restaurar');
 end;
 
-procedure TForm1.generateHistogram(imageHeight, imageWidth: Integer; const matrix: RGB_MATRIX);
+procedure TForm1.generateHistogram(imageHeight, imageWidth: Integer; const MATRIX: RGB_MATRIX);
 var
   x, y, i: Integer;
   histR, histG, histB, histI: Array [0..255] of Integer;

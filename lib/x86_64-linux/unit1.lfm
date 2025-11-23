@@ -114,10 +114,7 @@ object Form1: TForm1
     Title.Text.Strings = (
       'TAChart'
     )
-    object Chart1LineSeries1: TLineSeries
-      Title = 'R'
-      LinePen.Color = clRed
-    end
+    Visible = False
     object Chart1BarSeries1: TBarSeries
       BarBrush.Color = clRed
     end
@@ -126,6 +123,10 @@ object Form1: TForm1
     end
     object Chart1BarSeries3: TBarSeries
       BarBrush.Color = clRed
+    end
+    object Chart1LineSeries1: TLineSeries
+      Title = 'R'
+      LinePen.Color = clRed
     end
   end
   object MainMenu1: TMainMenu
