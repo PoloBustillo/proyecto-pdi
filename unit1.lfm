@@ -469,7 +469,6 @@ object Form1: TForm1
         Marks.Range.UseMax = True
         Marks.Range.UseMin = True
         Minors = <>
-        OrthogonalAxisIndex = 0
         Range.Max = 5
         Range.UseMax = True
         Range.UseMin = True
