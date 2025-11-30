@@ -105,6 +105,7 @@ object Form1: TForm1
       end
       object MenuItem10: TMenuItem
         Caption = 'Filtro gamma'
+        OnClick = MenuItem10Click
       end
       object MenuItem11: TMenuItem
         Caption = 'Contraste automático'

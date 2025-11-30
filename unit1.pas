@@ -26,7 +26,7 @@ type
     MenuItem4: TMenuItem;
     MenuItem5: TMenuItem;
     Binarizacion: TMenuItem;
-    MenuItem8: TMenuItem;
+    Restaurar: TMenuItem;
     OpenDialog1: TOpenDialog;
     Panel1: TPanel;
     StatusBar1: TStatusBar;
@@ -36,6 +36,7 @@ type
     procedure GrisesClick(Sender: TObject);
     procedure BinarizacionClick(Sender: TObject);
     procedure MenuItem10Click(Sender: TObject);
+    procedure RestaurarClick(Sender: TObject);
   end;
 
 var
@@ -166,6 +167,23 @@ begin
   finally
     GammaForm.Free;
   end;
+end;
+
+procedure TForm1.RestaurarClick(Sender: TObject);
+begin
+  // Restaurar la imagen a su estado original cargado desde archivo
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Copiar la matriz original a la matriz actual y actualizar la imagen
+  MATRIX := ORIGINAL_MATRIX;
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+  COLOR_MODE := 1; // Volver al modo color original
 end;
 
 end.
