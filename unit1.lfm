@@ -89,8 +89,9 @@ object Form1: TForm1
     end
     object MenuItem3: TMenuItem
       Caption = 'Gráficos'
-      object MenuItem4: TMenuItem
+      object Histograma: TMenuItem
         Caption = 'Histograma'
+        OnClick = HistogramaClick
       end
     end
     object MenuItem5: TMenuItem
@@ -103,9 +104,9 @@ object Form1: TForm1
         Caption = 'Binarización'
         OnClick = BinarizacionClick
       end
-      object MenuItem10: TMenuItem
+      object Gamma: TMenuItem
         Caption = 'Filtro gamma'
-        OnClick = MenuItem10Click
+        OnClick = GammaClick
       end
       object MenuItem11: TMenuItem
         Caption = 'Contraste automático'

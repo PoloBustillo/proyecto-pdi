@@ -37,23 +37,39 @@ implementation
 procedure TFormHist.FormCreate(Sender: TObject);
 begin
   // Configurar el gráfico
-  Chart1LineSeries1.Title := 'Intensidad';
-  Chart1LineSeries2.Title := 'Rojo';
-  Chart1LineSeries3.Title := 'Verde';
-  Chart1LineSeries4.Title := 'Azul';
+  Self.Caption := 'Histograma de la Imagen';
   
-  // Colores de las series
+  // Configurar series - Intensidad (gris)
+  Chart1LineSeries1.Title := 'Intensidad';
   Chart1LineSeries1.SeriesColor := clGray;
+  Chart1LineSeries1.LinePen.Width := 2;
+  
+  // Configurar series - Rojo
+  Chart1LineSeries2.Title := 'Rojo';
   Chart1LineSeries2.SeriesColor := clRed;
+  Chart1LineSeries2.LinePen.Width := 2;
+  
+  // Configurar series - Verde
+  Chart1LineSeries3.Title := 'Verde';
   Chart1LineSeries3.SeriesColor := clLime;
+  Chart1LineSeries3.LinePen.Width := 2;
+  
+  // Configurar series - Azul
+  Chart1LineSeries4.Title := 'Azul';
   Chart1LineSeries4.SeriesColor := clBlue;
+  Chart1LineSeries4.LinePen.Width := 2;
   
   // Configurar ejes
   try
+    // Eje X (valores de 0 a 255)
     Chart1.AxisList[1].Range.UseMin := True;
     Chart1.AxisList[1].Range.Min := 0;
     Chart1.AxisList[1].Range.UseMax := True;
     Chart1.AxisList[1].Range.Max := 255;
+    Chart1.AxisList[1].Title.Caption := 'Nivel de intensidad (0-255)';
+    
+    // Eje Y (frecuencia)
+    Chart1.AxisList[0].Title.Caption := 'Frecuencia';
   except
   end;
 end;

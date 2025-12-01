@@ -23,10 +23,10 @@ type
     MenuItem10: TMenuItem;
     MenuItem11: TMenuItem;
     MenuItem3: TMenuItem;
-    MenuItem4: TMenuItem;
+    Histograma: TMenuItem;
     MenuItem5: TMenuItem;
     Binarizacion: TMenuItem;
-    MenuItem8: TMenuItem;
+    Restaurar: TMenuItem;
     OpenDialog1: TOpenDialog;
     Panel1: TPanel;
     StatusBar1: TStatusBar;
@@ -36,6 +36,8 @@ type
     procedure GrisesClick(Sender: TObject);
     procedure BinarizacionClick(Sender: TObject);
     procedure MenuItem10Click(Sender: TObject);
+    procedure HistogramaClick(Sender: TObject);
+    procedure RestaurarClick(Sender: TObject);
   end;
 
 var
@@ -166,6 +168,71 @@ begin
   finally
     GammaForm.Free;
   end;
+end;
+
+procedure TForm1.HistogramaClick(Sender: TObject);
+begin
+  ShowImageHistogram;
+end;
+
+procedure TForm1.RestaurarClick(Sender: TObject);
+begin
+  // Restaurar la imagen a su estado original cargado desde archivo
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Copiar la matriz original a la matriz actual y actualizar la imagen
+  MATRIX := ORIGINAL_MATRIX;
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+  COLOR_MODE := 1; // Volver al modo color original
+end;
+
+// Procedimiento auxiliar para calcular y mostrar el histograma en un formulario aparte
+procedure ShowImageHistogram;
+var
+  histData: THistogramData;
+  x, y: Integer;
+  r, g, b: Byte;
+  intensity: Integer;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Inicializar histograma
+  for x := 0 to 255 do
+  begin
+    histData.Red[x]       := 0;
+    histData.Green[x]     := 0;
+    histData.Blue[x]      := 0;
+    histData.Intensity[x] := 0;
+  end;
+
+  // Recorrer la imagen y acumular frecuencias
+  for x := 0 to IMG_WIDTH - 1 do
+    for y := 0 to IMG_HEIGHT - 1 do
+    begin
+      r := MATRIX[x, y, 0];
+      g := MATRIX[x, y, 1];
+      b := MATRIX[x, y, 2];
+
+      Inc(histData.Red[r]);
+      Inc(histData.Green[g]);
+      Inc(histData.Blue[b]);
+
+      intensity := (Integer(r) + Integer(g) + Integer(b)) div 3;
+      Inc(histData.Intensity[intensity]);
+    end;
+
+  // Mostrar el histograma en el formulario dedicado
+  FormHist.ShowHistogram(histData);
 end;
 
 end.

@@ -20,10 +20,10 @@ type
     Grises: TMenuItem;
     Guardar: TMenuItem;
     MenuItem1: TMenuItem;
-    MenuItem10: TMenuItem;
+    Gamma: TMenuItem;
     MenuItem11: TMenuItem;
     MenuItem3: TMenuItem;
-    MenuItem4: TMenuItem;
+    Histograma: TMenuItem;
     MenuItem5: TMenuItem;
     Binarizacion: TMenuItem;
     Restaurar: TMenuItem;
@@ -35,7 +35,8 @@ type
     procedure AbrirClick(Sender: TObject);
     procedure GrisesClick(Sender: TObject);
     procedure BinarizacionClick(Sender: TObject);
-    procedure MenuItem10Click(Sender: TObject);
+    procedure GammaClick(Sender: TObject);
+    procedure HistogramaClick(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
   end;
 
@@ -137,7 +138,7 @@ begin
   end;
 end;
 
-procedure TForm1.MenuItem10Click(Sender: TObject);
+procedure TForm1.GammaClick(Sender: TObject);
 var
   GammaForm: TFormGammaCorrection;
 begin
@@ -167,6 +168,68 @@ begin
   finally
     GammaForm.Free;
   end;
+end;
+
+// Procedimiento auxiliar para calcular y mostrar el histograma en un formulario aparte
+procedure ShowImageHistogram;
+var
+  histData: THistogramData;
+  x, y: Integer;
+  r, g, b: Byte;
+  intensity: Integer;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear el formulario de histograma si no existe
+  if FormHist = nil then
+    FormHist := TFormHist.Create(Application);
+
+  // Inicializar histograma
+  for x := 0 to 255 do
+  begin
+    histData.Red[x]       := 0;
+    histData.Green[x]     := 0;
+    histData.Blue[x]      := 0;
+    histData.Intensity[x] := 0;
+  end;
+
+  // Recorrer la imagen y acumular frecuencias
+  for x := 0 to IMG_WIDTH - 1 do
+    for y := 0 to IMG_HEIGHT - 1 do
+    begin
+      r := MATRIX[x, y, 0];
+      g := MATRIX[x, y, 1];
+      b := MATRIX[x, y, 2];
+
+      // Acumular frecuencias por canal
+      Inc(histData.Red[r]);
+      Inc(histData.Green[g]);
+      Inc(histData.Blue[b]);
+
+      // Calcular intensidad usando la fórmula de luminancia perceptual (ITU-R BT.601)
+      // Este método pondera los canales según la sensibilidad del ojo humano
+      intensity := Round(0.299 * r + 0.587 * g + 0.114 * b);
+      
+      // Asegurar que intensity esté en el rango válido [0..255]
+      if intensity > 255 then
+        intensity := 255
+      else if intensity < 0 then
+        intensity := 0;
+      
+      Inc(histData.Intensity[intensity]);
+    end;
+
+  // Mostrar el histograma en el formulario dedicado
+  FormHist.ShowHistogram(histData);
+end;
+
+procedure TForm1.HistogramaClick(Sender: TObject);
+begin
+  ShowImageHistogram;
 end;
 
 procedure TForm1.RestaurarClick(Sender: TObject);

@@ -89,8 +89,9 @@ object Form1: TForm1
     end
     object MenuItem3: TMenuItem
       Caption = 'Gráficos'
-      object MenuItem4: TMenuItem
+      object Histograma: TMenuItem
         Caption = 'Histograma'
+        OnClick = HistogramaClick
       end
     end
     object MenuItem5: TMenuItem
@@ -110,8 +111,9 @@ object Form1: TForm1
       object MenuItem11: TMenuItem
         Caption = 'Contraste automático'
       end
-      object MenuItem8: TMenuItem
+      object Restaurar: TMenuItem
         Caption = 'Restaurar imagen original'
+        OnClick = RestaurarClick
       end
     end
   end
