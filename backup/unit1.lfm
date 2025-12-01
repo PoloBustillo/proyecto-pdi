@@ -85,6 +85,7 @@ object Form1: TForm1
       end
       object Guardar: TMenuItem
         Caption = 'Guardar imagen'
+        OnClick = GuardarClick
       end
     end
     object MenuItem3: TMenuItem
@@ -104,9 +105,9 @@ object Form1: TForm1
         Caption = 'Binarización'
         OnClick = BinarizacionClick
       end
-      object MenuItem10: TMenuItem
+      object Gamma: TMenuItem
         Caption = 'Filtro gamma'
-        OnClick = MenuItem10Click
+        OnClick = GammaClick
       end
       object MenuItem11: TMenuItem
         Caption = 'Contraste automático'
@@ -120,5 +121,9 @@ object Form1: TForm1
   object OpenDialog1: TOpenDialog
     Left = 528
     Top = 16
+  end
+  object SaveDialog1: TSaveDialog
+    Left = 494
+    Top = 143
   end
 end

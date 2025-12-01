@@ -22,21 +22,26 @@ type
     MenuItem1: TMenuItem;
     Gamma: TMenuItem;
     MenuItem11: TMenuItem;
+    MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
     Histograma: TMenuItem;
+    HSV: TMenuItem;
     MenuItem5: TMenuItem;
     Binarizacion: TMenuItem;
     Restaurar: TMenuItem;
     OpenDialog1: TOpenDialog;
     Panel1: TPanel;
+    SaveDialog1: TSaveDialog;
     StatusBar1: TStatusBar;
 
     procedure FormCreate(Sender: TObject);
     procedure AbrirClick(Sender: TObject);
     procedure GrisesClick(Sender: TObject);
+    procedure GuardarClick(Sender: TObject);
     procedure BinarizacionClick(Sender: TObject);
     procedure GammaClick(Sender: TObject);
     procedure HistogramaClick(Sender: TObject);
+    procedure MenuItem11Click(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
   end;
 
@@ -104,6 +109,81 @@ begin
   ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, CONVERTED_GRAY_MATRIX, BMAP);
   Image1.Picture.Assign(BMAP);
   COLOR_MODE := 2;
+end;
+
+procedure TForm1.GuardarClick(Sender: TObject);
+var
+  extension: string;
+begin
+  // Verificar que haya una imagen cargada
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('No hay imagen para guardar. Primero debes cargar una imagen.');
+    Exit;
+  end;
+
+  // Configurar el diálogo de guardar
+  SaveDialog1.Title := 'Guardar imagen como';
+  SaveDialog1.Filter := 'Bitmap (*.bmp)|*.bmp|JPEG (*.jpg)|*.jpg|PNG (*.png)|*.png|Todos los archivos|*.*';
+  SaveDialog1.FilterIndex := 1;
+  SaveDialog1.DefaultExt := 'bmp';
+  SaveDialog1.Options := [ofOverwritePrompt, ofEnableSizing, ofViewDetail];
+  
+  // Si el usuario ya había abierto un archivo, usar su nombre como sugerencia
+  if OpenDialog1.FileName <> '' then
+    SaveDialog1.FileName := ChangeFileExt(ExtractFileName(OpenDialog1.FileName), '_editado.bmp')
+  else
+    SaveDialog1.FileName := 'imagen_editada.bmp';
+
+  // Mostrar el diálogo y guardar si el usuario confirma
+  if SaveDialog1.Execute then
+  begin
+    try
+      // Actualizar BMAP con la matriz actual antes de guardar
+      ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+      
+      // Obtener la extensión del archivo
+      extension := LowerCase(ExtractFileExt(SaveDialog1.FileName));
+      
+      // Guardar según el formato seleccionado
+      if (extension = '.bmp') then
+      begin
+        BMAP.SaveToFile(SaveDialog1.FileName);
+      end
+      else if (extension = '.jpg') or (extension = '.jpeg') then
+      begin
+        // Para JPEG, crear un objeto temporal
+        with TJPEGImage.Create do
+        try
+          Assign(BMAP);
+          SaveToFile(SaveDialog1.FileName);
+        finally
+          Free;
+        end;
+      end
+      else if (extension = '.png') then
+      begin
+        // Para PNG, crear un objeto temporal
+        with TPortableNetworkGraphic.Create do
+        try
+          Assign(BMAP);
+          SaveToFile(SaveDialog1.FileName);
+        finally
+          Free;
+        end;
+      end
+      else
+      begin
+        // Por defecto, guardar como BMP
+        BMAP.SaveToFile(SaveDialog1.FileName);
+      end;
+      
+      ShowMessage('Imagen guardada exitosamente en: ' + SaveDialog1.FileName);
+    except
+      on E: Exception do
+        ShowMessage('Error al guardar la imagen: ' + E.Message);
+    end;
+  end;
 end;
 
 procedure TForm1.BinarizacionClick(Sender: TObject);
@@ -230,6 +310,11 @@ end;
 procedure TForm1.HistogramaClick(Sender: TObject);
 begin
   ShowImageHistogram;
+end;
+
+procedure TForm1.MenuItem11Click(Sender: TObject);
+begin
+
 end;
 
 procedure TForm1.RestaurarClick(Sender: TObject);

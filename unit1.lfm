@@ -85,6 +85,7 @@ object Form1: TForm1
       end
       object Guardar: TMenuItem
         Caption = 'Guardar imagen'
+        OnClick = GuardarClick
       end
     end
     object MenuItem3: TMenuItem
@@ -96,6 +97,16 @@ object Form1: TForm1
     end
     object MenuItem5: TMenuItem
       Caption = 'Color'
+      object Restaurar: TMenuItem
+        Caption = 'Restaurar imagen original'
+        OnClick = RestaurarClick
+      end
+      object MenuItem2: TMenuItem
+        Caption = '-'
+      end
+      object HSV: TMenuItem
+        Caption = 'Cambiar a HSV'
+      end
       object Grises: TMenuItem
         Caption = 'Escala de grises'
         OnClick = GrisesClick
@@ -110,15 +121,16 @@ object Form1: TForm1
       end
       object MenuItem11: TMenuItem
         Caption = 'Contraste automático'
-      end
-      object Restaurar: TMenuItem
-        Caption = 'Restaurar imagen original'
-        OnClick = RestaurarClick
+        OnClick = MenuItem11Click
       end
     end
   end
   object OpenDialog1: TOpenDialog
     Left = 528
     Top = 16
+  end
+  object SaveDialog1: TSaveDialog
+    Left = 494
+    Top = 143
   end
 end
