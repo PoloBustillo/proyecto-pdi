@@ -25,13 +25,18 @@ type
     Grises: TMenuItem;
     MenuItem1: TMenuItem;
     ContrasteReducir: TMenuItem;
+    Transformaciones: TMenuItem;
+    EscalaMas: TMenuItem;
+    EscalaMenos: TMenuItem;
+    RotacionIzq: TMenuItem;
+    RotacionDer: TMenuItem;
     Restart: TMenuItem;
     Restaurar: TMenuItem;
     MenuItem11: TMenuItem;
     Graficos: TMenuItem;
     Histograma: TMenuItem;
-    MenuItem4: TMenuItem;
-    MenuItem5: TMenuItem;
+    Bordes: TMenuItem;
+    FiltrosColor: TMenuItem;
     Binarizacion: TMenuItem;
     Diferencia: TMenuItem;
     Sobel: TMenuItem;
@@ -43,6 +48,7 @@ type
 
     procedure ContrasteReducirClick(Sender: TObject);
     procedure DiferenciaClick(Sender: TObject);
+    procedure EscalaMenosClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure AbrirClick(Sender: TObject);
     procedure GrisesClick(Sender: TObject);
@@ -52,9 +58,13 @@ type
     procedure GammaClick(Sender: TObject);
     procedure HistogramaClick(Sender: TObject);
     procedure ContrasteClick(Sender: TObject);
+    procedure EscalaMasClick(Sender: TObject);
+    procedure MenuItem2Click(Sender: TObject);
     procedure PrewittClick(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
     procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure RotacionDerClick(Sender: TObject);
+    procedure RotacionIzqClick(Sender: TObject);
     procedure SobelClick(Sender: TObject);
   end;
 
@@ -105,6 +115,90 @@ begin
   MATRIX := resultMatrix;
   ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
   Image1.Picture.Assign(BMAP);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+end;
+
+procedure TForm1.EscalaMenosClick(Sender: TObject);
+var
+  newWidth, newHeight: Integer;
+  newMatrix: RGB_MATRIX;
+  x, y, c: Integer;
+  srcX, srcY: Double;
+  x1, y1, x2, y2: Integer;
+  dx, dy: Double;
+  c1, c2, c3, c4: Byte;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Calcular nuevas dimensiones (factor 0.5)
+  newWidth := IMG_WIDTH div 2;
+  newHeight := IMG_HEIGHT div 2;
+  
+  if (newWidth < 10) or (newHeight < 10) then
+  begin
+    ShowMessage('La imagen es demasiado pequeña para reducir más');
+    Exit;
+  end;
+
+  // Crear matriz para la imagen escalada
+  SetLength(newMatrix, newWidth, newHeight, 3);
+  
+  // Interpolación bilineal
+  for x := 0 to newWidth - 1 do
+    for y := 0 to newHeight - 1 do
+    begin
+      // Coordenadas en la imagen original
+      srcX := x * 2.0;
+      srcY := y * 2.0;
+      
+      // Píxeles vecinos
+      x1 := Trunc(srcX);
+      y1 := Trunc(srcY);
+      x2 := x1 + 1;
+      y2 := y1 + 1;
+      
+      // Asegurar límites
+      if x2 >= IMG_WIDTH then x2 := IMG_WIDTH - 1;
+      if y2 >= IMG_HEIGHT then y2 := IMG_HEIGHT - 1;
+      
+      // Factores de interpolación
+      dx := srcX - x1;
+      dy := srcY - y1;
+      
+      // Interpolar cada canal
+      for c := 0 to 2 do
+      begin
+        c1 := MATRIX[x1, y1, c];
+        c2 := MATRIX[x2, y1, c];
+        c3 := MATRIX[x1, y2, c];
+        c4 := MATRIX[x2, y2, c];
+        
+        newMatrix[x, y, c] := Round(
+          c1 * (1 - dx) * (1 - dy) +
+          c2 * dx * (1 - dy) +
+          c3 * (1 - dx) * dy +
+          c4 * dx * dy
+        );
+      end;
+    end;
+  
+  // Actualizar dimensiones e imagen
+  IMG_WIDTH := newWidth;
+  IMG_HEIGHT := newHeight;
+  MATRIX := newMatrix;
+  
+  BMAP.SetSize(IMG_WIDTH, IMG_HEIGHT);
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Actualizar StatusBar
+  StatusBar1.Panels[6].Text := IntToStr(IMG_HEIGHT) + 'x' + IntToStr(IMG_WIDTH);
   
   // Sincronizar matriz HSV
   ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
@@ -555,6 +649,96 @@ begin
   end;
 end;
 
+procedure TForm1.EscalaMasClick(Sender: TObject);
+var
+  newWidth, newHeight: Integer;
+  newMatrix: RGB_MATRIX;
+  x, y, c: Integer;
+  srcX, srcY: Double;
+  x1, y1, x2, y2: Integer;
+  dx, dy: Double;
+  c1, c2, c3, c4: Byte;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Calcular nuevas dimensiones (factor 2.0)
+  newWidth := IMG_WIDTH * 2;
+  newHeight := IMG_HEIGHT * 2;
+  
+  if (newWidth > 20000) or (newHeight > 20000) then
+  begin
+    ShowMessage('La imagen resultante sería demasiado grande (límite: 20000x20000)');
+    Exit;
+  end;
+
+  // Crear matriz para la imagen escalada
+  SetLength(newMatrix, newWidth, newHeight, 3);
+  
+  // Interpolación bilineal
+  for x := 0 to newWidth - 1 do
+    for y := 0 to newHeight - 1 do
+    begin
+      // Coordenadas en la imagen original
+      srcX := x / 2.0;
+      srcY := y / 2.0;
+      
+      // Píxeles vecinos
+      x1 := Trunc(srcX);
+      y1 := Trunc(srcY);
+      x2 := x1 + 1;
+      y2 := y1 + 1;
+      
+      // Asegurar límites
+      if x2 >= IMG_WIDTH then x2 := IMG_WIDTH - 1;
+      if y2 >= IMG_HEIGHT then y2 := IMG_HEIGHT - 1;
+      
+      // Factores de interpolación
+      dx := srcX - x1;
+      dy := srcY - y1;
+      
+      // Interpolar cada canal
+      for c := 0 to 2 do
+      begin
+        c1 := MATRIX[x1, y1, c];
+        c2 := MATRIX[x2, y1, c];
+        c3 := MATRIX[x1, y2, c];
+        c4 := MATRIX[x2, y2, c];
+        
+        newMatrix[x, y, c] := Round(
+          c1 * (1 - dx) * (1 - dy) +
+          c2 * dx * (1 - dy) +
+          c3 * (1 - dx) * dy +
+          c4 * dx * dy
+        );
+      end;
+    end;
+  
+  // Actualizar dimensiones e imagen
+  IMG_WIDTH := newWidth;
+  IMG_HEIGHT := newHeight;
+  MATRIX := newMatrix;
+  
+  BMAP.SetSize(IMG_WIDTH, IMG_HEIGHT);
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Actualizar StatusBar
+  StatusBar1.Panels[6].Text := IntToStr(IMG_HEIGHT) + 'x' + IntToStr(IMG_WIDTH);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+end;
+
+procedure TForm1.MenuItem2Click(Sender: TObject);
+begin
+
+end;
+
+
 procedure TForm1.PrewittClick(Sender: TObject);
 var
   resultMatrix: RGB_MATRIX;
@@ -699,6 +883,82 @@ begin
   StatusBar1.Panels[1].Text := Format('Pos: (%d,%d)', [imgX, imgY]);
   StatusBar1.Panels[2].Text := Format('RGB: (%d,%d,%d)', [r, g, b]);
   StatusBar1.Panels[3].Text := Format('HSV: (%.0f°,%.2f,%.2f)', [h, s, v]);
+end;
+
+procedure TForm1.RotacionDerClick(Sender: TObject);
+var
+  newMatrix: RGB_MATRIX;
+  x, y, c: Integer;
+  temp: Integer;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear matriz para la imagen rotada (intercambiar dimensiones)
+  SetLength(newMatrix, IMG_HEIGHT, IMG_WIDTH, 3);
+  
+  // Rotar 90° a la derecha (sentido horario)
+  for x := 0 to IMG_WIDTH - 1 do
+    for y := 0 to IMG_HEIGHT - 1 do
+      for c := 0 to 2 do
+        newMatrix[IMG_HEIGHT - 1 - y, x, c] := MATRIX[x, y, c];
+  
+  // Intercambiar dimensiones
+  temp := IMG_WIDTH;
+  IMG_WIDTH := IMG_HEIGHT;
+  IMG_HEIGHT := temp;
+  MATRIX := newMatrix;
+  
+  BMAP.SetSize(IMG_WIDTH, IMG_HEIGHT);
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Actualizar StatusBar
+  StatusBar1.Panels[6].Text := IntToStr(IMG_HEIGHT) + 'x' + IntToStr(IMG_WIDTH);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+end;
+
+procedure TForm1.RotacionIzqClick(Sender: TObject);
+var
+  newMatrix: RGB_MATRIX;
+  x, y, c: Integer;
+  temp: Integer;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear matriz para la imagen rotada (intercambiar dimensiones)
+  SetLength(newMatrix, IMG_HEIGHT, IMG_WIDTH, 3);
+  
+  // Rotar 90° a la izquierda (sentido antihorario)
+  for x := 0 to IMG_WIDTH - 1 do
+    for y := 0 to IMG_HEIGHT - 1 do
+      for c := 0 to 2 do
+        newMatrix[y, IMG_WIDTH - 1 - x, c] := MATRIX[x, y, c];
+  
+  // Intercambiar dimensiones
+  temp := IMG_WIDTH;
+  IMG_WIDTH := IMG_HEIGHT;
+  IMG_HEIGHT := temp;
+  MATRIX := newMatrix;
+  
+  BMAP.SetSize(IMG_WIDTH, IMG_HEIGHT);
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Actualizar StatusBar
+  StatusBar1.Panels[6].Text := IntToStr(IMG_HEIGHT) + 'x' + IntToStr(IMG_WIDTH);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
 end;
 
 procedure TForm1.SobelClick(Sender: TObject);
