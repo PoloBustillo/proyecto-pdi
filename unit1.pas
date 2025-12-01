@@ -44,6 +44,7 @@ type
     procedure HistogramaClick(Sender: TObject);
     procedure MenuItem11Click(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
+    procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
   end;
 
 var
@@ -481,6 +482,106 @@ begin
   // Actualizar StatusBar y MenuItem
   StatusBar1.Panels[0].Text := 'Modo: RGB';
   HSV.Caption := 'Cambiar a HSV';
+end;
+
+procedure TForm1.Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+var
+  imgX, imgY: Integer;
+  r, g, b: Byte;
+  h, s, v: Double;
+  scaleX, scaleY: Double;
+  offsetX, offsetY: Integer;
+  displayWidth, displayHeight: Integer;
+begin
+  // Verificar que haya una imagen cargada
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+    Exit;
+  
+  // Calcular la escala y offset debido a Stretch y Center
+  if Image1.Stretch then
+  begin
+    if Image1.Proportional then
+    begin
+      // Calcular aspecto ratio
+      scaleX := Image1.Width / IMG_WIDTH;
+      scaleY := Image1.Height / IMG_HEIGHT;
+      
+      // Usar la menor escala para mantener proporciones
+      if scaleX < scaleY then
+      begin
+        displayWidth := Image1.Width;
+        displayHeight := Round(IMG_HEIGHT * scaleX);
+        offsetX := 0;
+        offsetY := (Image1.Height - displayHeight) div 2;
+      end
+      else
+      begin
+        displayWidth := Round(IMG_WIDTH * scaleY);
+        displayHeight := Image1.Height;
+        offsetX := (Image1.Width - displayWidth) div 2;
+        offsetY := 0;
+      end;
+      
+      // Ajustar coordenadas del mouse
+      X := X - offsetX;
+      Y := Y - offsetY;
+      
+      // Convertir a coordenadas de imagen
+      if displayWidth > 0 then
+        imgX := Round((X * IMG_WIDTH) / displayWidth)
+      else
+        Exit;
+        
+      if displayHeight > 0 then
+        imgY := Round((Y * IMG_HEIGHT) / displayHeight)
+      else
+        Exit;
+    end
+    else
+    begin
+      // Sin proporcional, solo stretch
+      imgX := Round((X * IMG_WIDTH) / Image1.Width);
+      imgY := Round((Y * IMG_HEIGHT) / Image1.Height);
+    end;
+  end
+  else
+  begin
+    // Sin stretch, las coordenadas son directas (considerar center)
+    if Image1.Center then
+    begin
+      offsetX := (Image1.Width - IMG_WIDTH) div 2;
+      offsetY := (Image1.Height - IMG_HEIGHT) div 2;
+      imgX := X - offsetX;
+      imgY := Y - offsetY;
+    end
+    else
+    begin
+      imgX := X;
+      imgY := Y;
+    end;
+  end;
+  
+  // Verificar que las coordenadas estén dentro de los límites
+  if (imgX < 0) or (imgX >= IMG_WIDTH) or (imgY < 0) or (imgY >= IMG_HEIGHT) then
+  begin
+    StatusBar1.Panels[1].Text := 'Posición: fuera de imagen';
+    Exit;
+  end;
+  
+  // Obtener valores RGB del pixel
+  r := MATRIX[imgX, imgY, 0];
+  g := MATRIX[imgX, imgY, 1];
+  b := MATRIX[imgX, imgY, 2];
+  
+  // Obtener valores HSV del pixel
+  h := CONVERTED_HSV_MATRIX[imgX, imgY, 0];
+  s := CONVERTED_HSV_MATRIX[imgX, imgY, 1];
+  v := CONVERTED_HSV_MATRIX[imgX, imgY, 2];
+  
+  // Actualizar StatusBar con información del pixel
+  StatusBar1.Panels[1].Text := Format('Pos: (%d,%d)', [imgX, imgY]);
+  StatusBar1.Panels[2].Text := Format('RGB: (%d,%d,%d)', [r, g, b]);
+  StatusBar1.Panels[3].Text := Format('HSV: (%.0f°,%.2f,%.2f)', [h, s, v]);
 end;
 
 end.
