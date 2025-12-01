@@ -17,28 +17,31 @@ type
     Image1: TImage;
     MainMenu1: TMainMenu;
     Abrir: TMenuItem;
-    Grises: TMenuItem;
     Guardar: TMenuItem;
-    MenuItem1: TMenuItem;
+    Archivo: TMenuItem;
     Gamma: TMenuItem;
     Contraste: TMenuItem;
-    MenuItem11: TMenuItem;
-    MenuItem2: TMenuItem;
-    MenuItem3: TMenuItem;
-    Histograma: TMenuItem;
     HSV: TMenuItem;
+    Grises: TMenuItem;
+    MenuItem1: TMenuItem;
+    ContrasteReducir: TMenuItem;
+    Restart: TMenuItem;
+    Restaurar: TMenuItem;
+    MenuItem11: TMenuItem;
+    Graficos: TMenuItem;
+    Histograma: TMenuItem;
     MenuItem4: TMenuItem;
     MenuItem5: TMenuItem;
     Binarizacion: TMenuItem;
     Diferencia: TMenuItem;
     Sobel: TMenuItem;
     Prewitt: TMenuItem;
-    Restaurar: TMenuItem;
     OpenDialog1: TOpenDialog;
     Panel1: TPanel;
     SaveDialog1: TSaveDialog;
     StatusBar1: TStatusBar;
 
+    procedure ContrasteReducirClick(Sender: TObject);
     procedure DiferenciaClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure AbrirClick(Sender: TObject);
@@ -49,7 +52,6 @@ type
     procedure GammaClick(Sender: TObject);
     procedure HistogramaClick(Sender: TObject);
     procedure ContrasteClick(Sender: TObject);
-    procedure MenuItem11Click(Sender: TObject);
     procedure PrewittClick(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
     procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -104,6 +106,36 @@ begin
   ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
   Image1.Picture.Assign(BMAP);
   
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+end;
+
+procedure TForm1.ContrasteReducirClick(Sender: TObject);
+var
+  x, y, c: Integer;
+  value: Byte;
+  newValue: Integer;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Reducir contraste: comprimir valores al rango [64, 192]
+  for x := 0 to IMG_WIDTH - 1 do
+    for y := 0 to IMG_HEIGHT - 1 do
+      for c := 0 to 2 do
+      begin
+        value := MATRIX[x, y, c];
+        // Mapear [0,255] → [64,192]
+        newValue := 64 + Round((value * 128) / 255);
+        MATRIX[x, y, c] := Byte(newValue);
+      end;
+
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+
   // Sincronizar matriz HSV
   ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
 end;
@@ -521,36 +553,6 @@ begin
     // Sincronizar matriz HSV
     ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
   end;
-end;
-
-procedure TForm1.MenuItem11Click(Sender: TObject);
-var
-  x, y, c: Integer;
-  value: Byte;
-  newValue: Integer;
-begin
-  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
-  begin
-    ShowMessage('Primero debes cargar una imagen');
-    Exit;
-  end;
-
-  // Reducir contraste: comprimir valores al rango [64, 192]
-  for x := 0 to IMG_WIDTH - 1 do
-    for y := 0 to IMG_HEIGHT - 1 do
-      for c := 0 to 2 do
-      begin
-        value := MATRIX[x, y, c];
-        // Mapear [0,255] → [64,192]
-        newValue := 64 + Round((value * 128) / 255);
-        MATRIX[x, y, c] := Byte(newValue);
-      end;
-  
-  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
-  Image1.Picture.Assign(BMAP);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
 end;
 
 procedure TForm1.PrewittClick(Sender: TObject);

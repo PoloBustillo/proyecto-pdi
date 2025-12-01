@@ -1,7 +1,7 @@
 object FormBinarization: TFormBinarization
-  Left = 2948
+  Left = 964
   Height = 600
-  Top = 193
+  Top = 182
   Width = 800
   Caption = 'Binarización de Imagen'
   ClientHeight = 600
