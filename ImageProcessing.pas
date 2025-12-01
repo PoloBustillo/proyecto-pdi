@@ -166,7 +166,8 @@ begin
   
   C := V * S;
   Hp := H / 60.0;
-  X := C * (1.0 - Abs(Frac(Hp) * 2.0 - 1.0));
+  // Fórmula correcta: X = C × (1 - |(Hp mod 2) - 1|)
+  X := C * (1.0 - Abs((Hp - Int(Hp / 2.0) * 2.0) - 1.0));
   
   if (Hp >= 0) and (Hp < 1) then
   begin
