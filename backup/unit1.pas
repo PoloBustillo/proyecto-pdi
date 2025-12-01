@@ -14,6 +14,7 @@ type
   { TForm1 }
 
   TForm1 = class(TForm)
+    Color: TMenuItem;
     Image1: TImage;
     MainMenu1: TMainMenu;
     Abrir: TMenuItem;
@@ -25,6 +26,9 @@ type
     Grises: TMenuItem;
     MenuItem1: TMenuItem;
     ContrasteReducir: TMenuItem;
+    Espaciales: TMenuItem;
+    Textura: TMenuItem;
+    Suavizado: TMenuItem;
     Transformaciones: TMenuItem;
     EscalaMas: TMenuItem;
     EscalaMenos: TMenuItem;
@@ -60,12 +64,14 @@ type
     procedure ContrasteClick(Sender: TObject);
     procedure EscalaMasClick(Sender: TObject);
     procedure MenuItem2Click(Sender: TObject);
+    procedure SuavizadoClick(Sender: TObject);
     procedure PrewittClick(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
     procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure RotacionDerClick(Sender: TObject);
     procedure RotacionIzqClick(Sender: TObject);
     procedure SobelClick(Sender: TObject);
+    procedure TexturaClick(Sender: TObject);
   end;
 
 var
@@ -669,9 +675,9 @@ begin
   newWidth := IMG_WIDTH * 2;
   newHeight := IMG_HEIGHT * 2;
   
-  if (newWidth > 8000) or (newHeight > 8000) then
+  if (newWidth > 20000) or (newHeight > 20000) then
   begin
-    ShowMessage('La imagen resultante sería demasiado grande (límite: 8000x8000)');
+    ShowMessage('La imagen resultante sería demasiado grande (límite: 20000x20000)');
     Exit;
   end;
 
@@ -736,6 +742,58 @@ end;
 procedure TForm1.MenuItem2Click(Sender: TObject);
 begin
 
+end;
+
+procedure TForm1.SuavizadoClick(Sender: TObject);
+var
+  resultMatrix: RGB_MATRIX;
+  maskSizeStr, trimAmountStr: string;
+  maskSize, trimAmount: Integer;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Solicitar parámetros al usuario
+  maskSizeStr := '5';
+  if not InputQuery('Suavizado Recortado', 'Tamaño de máscara (t×t, impar):', maskSizeStr) then
+    Exit;
+  
+  maskSize := StrToIntDef(maskSizeStr, 5);
+  if (maskSize < 3) or (maskSize > 15) or (maskSize mod 2 = 0) then
+  begin
+    ShowMessage('El tamaño debe ser impar entre 3 y 15');
+    Exit;
+  end;
+  
+  trimAmountStr := '2';
+  if not InputQuery('Suavizado Recortado', 'Cantidad a descartar de cada extremo (a):', trimAmountStr) then
+    Exit;
+    
+  trimAmount := StrToIntDef(trimAmountStr, 2);
+  if (trimAmount < 0) or (trimAmount >= maskSize * maskSize div 4) then
+  begin
+    ShowMessage('Valor inválido. Debe ser menor que ' + IntToStr(maskSize * maskSize div 4));
+    Exit;
+  end;
+
+  // Crear matriz para el resultado
+  SetLength(resultMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
+  
+  // Aplicar suavizado recortado
+  ImageProcessing.TrimmedSmoothing(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix, maskSize, trimAmount);
+  
+  // Actualizar la matriz y la imagen
+  MATRIX := resultMatrix;
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+  
+  ShowMessage(Format('Suavizado aplicado: máscara %d×%d, descartando %d valores extremos', [maskSize, maskSize, trimAmount]));
 end;
 
 
@@ -984,6 +1042,33 @@ begin
   
   // Sincronizar matriz HSV
   ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+end;
+
+procedure TForm1.TexturaClick(Sender: TObject);
+var
+  resultMatrix: RGB_MATRIX;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear matriz para el resultado
+  SetLength(resultMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
+  
+  // Aplicar codificación de textura (Local Binary Pattern)
+  ImageProcessing.EncodedTexture(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix);
+  
+  // Actualizar la matriz y la imagen
+  MATRIX := resultMatrix;
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+  
+  ShowMessage('Textura codificada aplicada (Local Binary Pattern en regiones 3×3)');
 end;
 
 end.

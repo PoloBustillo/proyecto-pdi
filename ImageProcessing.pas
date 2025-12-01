@@ -58,6 +58,27 @@ procedure EdgeDetectionPrewitt(imageHeight, imageWidth: Integer;
 procedure EdgeDetectionSobel(imageHeight, imageWidth: Integer; 
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
 
+{ Filtros de suavizado y textura }
+procedure TrimmedSmoothing(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  maskSize: Integer; trimAmount: Integer);
+procedure EncodedTexture(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
+
+{ Transformaciones geométricas }
+procedure ScaleUpBilinear(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  out newWidth, newHeight: Integer);
+procedure ScaleDownBilinear(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  out newWidth, newHeight: Integer);
+procedure RotateRight90(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  out newWidth, newHeight: Integer);
+procedure RotateLeft90(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  out newWidth, newHeight: Integer);
+
 { Funciones de análisis }
 procedure GenerateHistogram(imageHeight, imageWidth: Integer; 
   const matrix: RGB_MATRIX; out histData: THistogramData);
@@ -838,6 +859,323 @@ begin
     dstMatrix[imageWidth - 1, y, 1] := 0;
     dstMatrix[imageWidth - 1, y, 2] := 0;
   end;
+end;
+
+{ Suavizado recortado (Trimmed Mean Smoothing) }
+procedure TrimmedSmoothing(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  maskSize: Integer; trimAmount: Integer);
+var
+  x, y, c, i, j, idx: Integer;
+  halfMask: Integer;
+  values: array of Byte;
+  count: Integer;
+  
+  procedure QuickSort(var arr: array of Byte; L, R: Integer);
+  var
+    I, J: Integer;
+    P, T: Byte;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := arr[(L + R) shr 1];
+      repeat
+        while arr[I] < P do Inc(I);
+        while arr[J] > P do Dec(J);
+        if I <= J then
+        begin
+          T := arr[I];
+          arr[I] := arr[J];
+          arr[J] := T;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then QuickSort(arr, L, J);
+      L := I;
+    until I >= R;
+  end;
+  
+begin
+  halfMask := maskSize div 2;
+  SetLength(values, maskSize * maskSize);
+  
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      for c := 0 to 2 do
+      begin
+        count := 0;
+        
+        // Recolectar valores de la vecindad
+        for i := -halfMask to halfMask do
+          for j := -halfMask to halfMask do
+          begin
+            idx := x + i;
+            if (idx >= 0) and (idx < imageWidth) then
+            begin
+              idx := y + j;
+              if (idx >= 0) and (idx < imageHeight) then
+              begin
+                values[count] := srcMatrix[x + i, y + j, c];
+                Inc(count);
+              end;
+            end;
+          end;
+        
+        // Ordenar valores
+        if count > 0 then
+        begin
+          QuickSort(values, 0, count - 1);
+          
+          // Calcular promedio recortado (sin extremos)
+          if count > 2 * trimAmount then
+          begin
+            idx := 0;
+            for i := trimAmount to count - 1 - trimAmount do
+              idx := idx + values[i];
+            dstMatrix[x, y, c] := idx div (count - 2 * trimAmount);
+          end
+          else
+            dstMatrix[x, y, c] := values[count div 2]; // Mediana si hay pocos valores
+        end
+        else
+          dstMatrix[x, y, c] := srcMatrix[x, y, c];
+      end;
+  
+  SetLength(values, 0);
+end;
+
+{ Textura codificada (Local Binary Pattern - LBP) }
+procedure EncodedTexture(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
+var
+  x, y, c: Integer;
+  grayMatrix: array of array of Byte;
+  i, j: Integer;
+  center, neighbor: Byte;
+  pattern: Integer;
+  dx, dy: array[0..7] of Integer;
+  
+begin
+  // Direcciones de los 8 vecinos (sentido horario desde arriba)
+  dx[0] := 0;  dy[0] := -1;  // Arriba
+  dx[1] := 1;  dy[1] := -1;  // Arriba-derecha
+  dx[2] := 1;  dy[2] := 0;   // Derecha
+  dx[3] := 1;  dy[3] := 1;   // Abajo-derecha
+  dx[4] := 0;  dy[4] := 1;   // Abajo
+  dx[5] := -1; dy[5] := 1;   // Abajo-izquierda
+  dx[6] := -1; dy[6] := 0;   // Izquierda
+  dx[7] := -1; dy[7] := -1;  // Arriba-izquierda
+  
+  // Convertir a escala de grises
+  SetLength(grayMatrix, imageWidth, imageHeight);
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+    begin
+      // Promedio RGB para escala de grises
+      grayMatrix[x, y] := (srcMatrix[x, y, 0] + srcMatrix[x, y, 1] + srcMatrix[x, y, 2]) div 3;
+    end;
+  
+  // Calcular LBP para cada pixel
+  for x := 1 to imageWidth - 2 do
+    for y := 1 to imageHeight - 2 do
+    begin
+      center := grayMatrix[x, y];
+      pattern := 0;
+      
+      // Comparar con los 8 vecinos
+      for i := 0 to 7 do
+      begin
+        neighbor := grayMatrix[x + dx[i], y + dy[i]];
+        if neighbor >= center then
+          pattern := pattern or (1 shl i);
+      end;
+      
+      // Asignar patrón codificado (normalizar a 0-255)
+      for c := 0 to 2 do
+        dstMatrix[x, y, c] := pattern;
+    end;
+  
+  // Bordes en negro
+  for x := 0 to imageWidth - 1 do
+  begin
+    for c := 0 to 2 do
+    begin
+      dstMatrix[x, 0, c] := 0;
+      dstMatrix[x, imageHeight - 1, c] := 0;
+    end;
+  end;
+  for y := 0 to imageHeight - 1 do
+  begin
+    for c := 0 to 2 do
+    begin
+      dstMatrix[0, y, c] := 0;
+      dstMatrix[imageWidth - 1, y, c] := 0;
+    end;
+  end;
+  
+  SetLength(grayMatrix, 0, 0);
+end;
+
+{ Transformaciones Geométricas }
+
+{ Aumento de escala con factor 2× usando interpolación bilineal }
+procedure ScaleUpBilinear(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  out newWidth, newHeight: Integer);
+var
+  x, y, c: Integer;
+  srcX, srcY: Double;
+  x1, y1, x2, y2: Integer;
+  dx, dy: Double;
+  c1, c2, c3, c4: Byte;
+begin
+  // Calcular nuevas dimensiones (factor 2.0)
+  newWidth := imageWidth * 2;
+  newHeight := imageHeight * 2;
+  
+  // Crear matriz para la imagen escalada
+  SetLength(dstMatrix, newWidth, newHeight, 3);
+  
+  // Interpolación bilineal
+  for x := 0 to newWidth - 1 do
+    for y := 0 to newHeight - 1 do
+    begin
+      // Coordenadas en la imagen original
+      srcX := x / 2.0;
+      srcY := y / 2.0;
+      
+      // Píxeles vecinos
+      x1 := Trunc(srcX);
+      y1 := Trunc(srcY);
+      x2 := x1 + 1;
+      y2 := y1 + 1;
+      
+      // Asegurar límites
+      if x2 >= imageWidth then x2 := imageWidth - 1;
+      if y2 >= imageHeight then y2 := imageHeight - 1;
+      
+      // Factores de interpolación
+      dx := srcX - x1;
+      dy := srcY - y1;
+      
+      // Interpolar cada canal
+      for c := 0 to 2 do
+      begin
+        c1 := srcMatrix[x1, y1, c];
+        c2 := srcMatrix[x2, y1, c];
+        c3 := srcMatrix[x1, y2, c];
+        c4 := srcMatrix[x2, y2, c];
+        
+        dstMatrix[x, y, c] := Round(
+          c1 * (1 - dx) * (1 - dy) +
+          c2 * dx * (1 - dy) +
+          c3 * (1 - dx) * dy +
+          c4 * dx * dy
+        );
+      end;
+    end;
+end;
+
+{ Reducción de escala con factor ½ usando interpolación bilineal }
+procedure ScaleDownBilinear(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  out newWidth, newHeight: Integer);
+var
+  x, y, c: Integer;
+  srcX, srcY: Double;
+  x1, y1, x2, y2: Integer;
+  dx, dy: Double;
+  c1, c2, c3, c4: Byte;
+begin
+  // Calcular nuevas dimensiones (factor 0.5)
+  newWidth := imageWidth div 2;
+  newHeight := imageHeight div 2;
+  
+  // Crear matriz para la imagen escalada
+  SetLength(dstMatrix, newWidth, newHeight, 3);
+  
+  // Interpolación bilineal
+  for x := 0 to newWidth - 1 do
+    for y := 0 to newHeight - 1 do
+    begin
+      // Coordenadas en la imagen original
+      srcX := x * 2.0;
+      srcY := y * 2.0;
+      
+      // Píxeles vecinos
+      x1 := Trunc(srcX);
+      y1 := Trunc(srcY);
+      x2 := x1 + 1;
+      y2 := y1 + 1;
+      
+      // Asegurar límites
+      if x2 >= imageWidth then x2 := imageWidth - 1;
+      if y2 >= imageHeight then y2 := imageHeight - 1;
+      
+      // Factores de interpolación
+      dx := srcX - x1;
+      dy := srcY - y1;
+      
+      // Interpolar cada canal
+      for c := 0 to 2 do
+      begin
+        c1 := srcMatrix[x1, y1, c];
+        c2 := srcMatrix[x2, y1, c];
+        c3 := srcMatrix[x1, y2, c];
+        c4 := srcMatrix[x2, y2, c];
+        
+        dstMatrix[x, y, c] := Round(
+          c1 * (1 - dx) * (1 - dy) +
+          c2 * dx * (1 - dy) +
+          c3 * (1 - dx) * dy +
+          c4 * dx * dy
+        );
+      end;
+    end;
+end;
+
+{ Rotación 90° a la derecha (sentido horario) }
+procedure RotateRight90(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  out newWidth, newHeight: Integer);
+var
+  x, y, c: Integer;
+begin
+  // Intercambiar dimensiones
+  newWidth := imageHeight;
+  newHeight := imageWidth;
+  
+  // Crear matriz para la imagen rotada
+  SetLength(dstMatrix, newWidth, newHeight, 3);
+  
+  // Rotar 90° a la derecha (sentido horario)
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      for c := 0 to 2 do
+        dstMatrix[imageHeight - 1 - y, x, c] := srcMatrix[x, y, c];
+end;
+
+{ Rotación 90° a la izquierda (sentido antihorario) }
+procedure RotateLeft90(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
+  out newWidth, newHeight: Integer);
+var
+  x, y, c: Integer;
+begin
+  // Intercambiar dimensiones
+  newWidth := imageHeight;
+  newHeight := imageWidth;
+  
+  // Crear matriz para la imagen rotada
+  SetLength(dstMatrix, newWidth, newHeight, 3);
+  
+  // Rotar 90° a la izquierda (sentido antihorario)
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      for c := 0 to 2 do
+        dstMatrix[y, imageWidth - 1 - x, c] := srcMatrix[x, y, c];
 end;
 
 end.

@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Menus, ComCtrls,
   ExtCtrls, StdCtrls, ExtDlgs, TAGraph, TASeries, TAChartUtils, Math,
-  ImageProcessing, FormHistogram, FormBinarize, FormGamma;
+  ImageProcessing, FormHistogram, FormBinarize, FormGamma, UIHelpers;
 
 type
 
@@ -25,6 +25,9 @@ type
     Grises: TMenuItem;
     MenuItem1: TMenuItem;
     ContrasteReducir: TMenuItem;
+    Espaciales: TMenuItem;
+    Textura: TMenuItem;
+    Suavizado: TMenuItem;
     Transformaciones: TMenuItem;
     EscalaMas: TMenuItem;
     EscalaMenos: TMenuItem;
@@ -60,12 +63,14 @@ type
     procedure ContrasteClick(Sender: TObject);
     procedure EscalaMasClick(Sender: TObject);
     procedure MenuItem2Click(Sender: TObject);
+    procedure SuavizadoClick(Sender: TObject);
     procedure PrewittClick(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
     procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure RotacionDerClick(Sender: TObject);
     procedure RotacionIzqClick(Sender: TObject);
     procedure SobelClick(Sender: TObject);
+    procedure TexturaClick(Sender: TObject);
   end;
 
 var
@@ -123,12 +128,7 @@ end;
 procedure TForm1.EscalaMenosClick(Sender: TObject);
 var
   newWidth, newHeight: Integer;
-  newMatrix: RGB_MATRIX;
-  x, y, c: Integer;
-  srcX, srcY: Double;
-  x1, y1, x2, y2: Integer;
-  dx, dy: Double;
-  c1, c2, c3, c4: Byte;
+  resultMatrix: RGB_MATRIX;
 begin
   if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
   begin
@@ -136,62 +136,20 @@ begin
     Exit;
   end;
 
-  // Calcular nuevas dimensiones (factor 0.5)
-  newWidth := IMG_WIDTH div 2;
-  newHeight := IMG_HEIGHT div 2;
-  
-  if (newWidth < 10) or (newHeight < 10) then
+  // Verificar tamaño mínimo
+  if (IMG_WIDTH div 2 < 10) or (IMG_HEIGHT div 2 < 10) then
   begin
     ShowMessage('La imagen es demasiado pequeña para reducir más');
     Exit;
   end;
 
-  // Crear matriz para la imagen escalada
-  SetLength(newMatrix, newWidth, newHeight, 3);
-  
-  // Interpolación bilineal
-  for x := 0 to newWidth - 1 do
-    for y := 0 to newHeight - 1 do
-    begin
-      // Coordenadas en la imagen original
-      srcX := x * 2.0;
-      srcY := y * 2.0;
-      
-      // Píxeles vecinos
-      x1 := Trunc(srcX);
-      y1 := Trunc(srcY);
-      x2 := x1 + 1;
-      y2 := y1 + 1;
-      
-      // Asegurar límites
-      if x2 >= IMG_WIDTH then x2 := IMG_WIDTH - 1;
-      if y2 >= IMG_HEIGHT then y2 := IMG_HEIGHT - 1;
-      
-      // Factores de interpolación
-      dx := srcX - x1;
-      dy := srcY - y1;
-      
-      // Interpolar cada canal
-      for c := 0 to 2 do
-      begin
-        c1 := MATRIX[x1, y1, c];
-        c2 := MATRIX[x2, y1, c];
-        c3 := MATRIX[x1, y2, c];
-        c4 := MATRIX[x2, y2, c];
-        
-        newMatrix[x, y, c] := Round(
-          c1 * (1 - dx) * (1 - dy) +
-          c2 * dx * (1 - dy) +
-          c3 * (1 - dx) * dy +
-          c4 * dx * dy
-        );
-      end;
-    end;
+  // Aplicar reducción de escala con interpolación bilineal
+  ImageProcessing.ScaleDownBilinear(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix, newWidth, newHeight);
   
   // Actualizar dimensiones e imagen
   IMG_WIDTH := newWidth;
   IMG_HEIGHT := newHeight;
-  MATRIX := newMatrix;
+  MATRIX := resultMatrix;
   
   BMAP.SetSize(IMG_WIDTH, IMG_HEIGHT);
   ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
@@ -530,87 +488,8 @@ end;
 
 // Procedimiento auxiliar para calcular y mostrar el histograma en un formulario aparte
 procedure ShowImageHistogram;
-var
-  histData: THistogramData;
-  x, y: Integer;
-  r, g, b: Byte;
-  h, s, v: Double;
-  hByte, sByte, vByte: Byte;
-  intensity: Integer;
 begin
-  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
-  begin
-    ShowMessage('Primero debes cargar una imagen');
-    Exit;
-  end;
-
-  // Crear el formulario de histograma si no existe
-  if FormHist = nil then
-    FormHist := TFormHist.Create(Application);
-
-  // Inicializar histograma
-  for x := 0 to 255 do
-  begin
-    histData.Red[x]       := 0;
-    histData.Green[x]     := 0;
-    histData.Blue[x]      := 0;
-    histData.Intensity[x] := 0;
-  end;
-
-  // Recorrer la imagen y acumular frecuencias según el modo
-  if COLOR_MODE = 3 then  // Modo HSV
-  begin
-    // En modo HSV, mostrar histograma de H, S, V
-    for x := 0 to IMG_WIDTH - 1 do
-      for y := 0 to IMG_HEIGHT - 1 do
-      begin
-        h := CONVERTED_HSV_MATRIX[x, y, 0];
-        s := CONVERTED_HSV_MATRIX[x, y, 1];
-        v := CONVERTED_HSV_MATRIX[x, y, 2];
-        
-        // Convertir a rango 0-255 para el histograma
-        hByte := Round(h * 255.0 / 360.0);  // H: 0-360° → 0-255
-        sByte := Round(s * 255.0);           // S: 0-1 → 0-255
-        vByte := Round(v * 255.0);           // V: 0-1 → 0-255
-        
-        Inc(histData.Red[hByte]);      // Usar canal Rojo para H (Matiz)
-        Inc(histData.Green[sByte]);    // Usar canal Verde para S (Saturación)
-        Inc(histData.Blue[vByte]);     // Usar canal Azul para V (Brillo)
-        Inc(histData.Intensity[vByte]); // Intensidad = V en HSV
-      end;
-    
-    ShowMessage('Histograma HSV: Rojo=H (Matiz), Verde=S (Saturación), Azul=V (Brillo)');
-  end
-  else  // Modo RGB
-  begin
-    for x := 0 to IMG_WIDTH - 1 do
-      for y := 0 to IMG_HEIGHT - 1 do
-      begin
-        r := MATRIX[x, y, 0];
-        g := MATRIX[x, y, 1];
-        b := MATRIX[x, y, 2];
-
-        // Acumular frecuencias por canal RGB
-        Inc(histData.Red[r]);
-        Inc(histData.Green[g]);
-        Inc(histData.Blue[b]);
-
-        // Calcular intensidad usando la fórmula de luminancia perceptual (ITU-R BT.601)
-        // Este método pondera los canales según la sensibilidad del ojo humano
-        intensity := Round(0.299 * r + 0.587 * g + 0.114 * b);
-        
-        // Asegurar que intensity esté en el rango válido [0..255]
-        if intensity > 255 then
-          intensity := 255
-        else if intensity < 0 then
-          intensity := 0;
-        
-        Inc(histData.Intensity[intensity]);
-      end;
-  end;
-
-  // Mostrar el histograma en el formulario dedicado
-  FormHist.ShowHistogram(histData);
+  UIHelpers.ShowImageHistogram(IMG_WIDTH, IMG_HEIGHT, MATRIX, CONVERTED_HSV_MATRIX, COLOR_MODE);
 end;
 
 procedure TForm1.HistogramaClick(Sender: TObject);
@@ -652,12 +531,7 @@ end;
 procedure TForm1.EscalaMasClick(Sender: TObject);
 var
   newWidth, newHeight: Integer;
-  newMatrix: RGB_MATRIX;
-  x, y, c: Integer;
-  srcX, srcY: Double;
-  x1, y1, x2, y2: Integer;
-  dx, dy: Double;
-  c1, c2, c3, c4: Byte;
+  resultMatrix: RGB_MATRIX;
 begin
   if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
   begin
@@ -665,62 +539,20 @@ begin
     Exit;
   end;
 
-  // Calcular nuevas dimensiones (factor 2.0)
-  newWidth := IMG_WIDTH * 2;
-  newHeight := IMG_HEIGHT * 2;
-  
-  if (newWidth > 20000) or (newHeight > 20000) then
+  // Verificar tamaño máximo
+  if (IMG_WIDTH * 2 > 20000) or (IMG_HEIGHT * 2 > 20000) then
   begin
     ShowMessage('La imagen resultante sería demasiado grande (límite: 20000x20000)');
     Exit;
   end;
 
-  // Crear matriz para la imagen escalada
-  SetLength(newMatrix, newWidth, newHeight, 3);
-  
-  // Interpolación bilineal
-  for x := 0 to newWidth - 1 do
-    for y := 0 to newHeight - 1 do
-    begin
-      // Coordenadas en la imagen original
-      srcX := x / 2.0;
-      srcY := y / 2.0;
-      
-      // Píxeles vecinos
-      x1 := Trunc(srcX);
-      y1 := Trunc(srcY);
-      x2 := x1 + 1;
-      y2 := y1 + 1;
-      
-      // Asegurar límites
-      if x2 >= IMG_WIDTH then x2 := IMG_WIDTH - 1;
-      if y2 >= IMG_HEIGHT then y2 := IMG_HEIGHT - 1;
-      
-      // Factores de interpolación
-      dx := srcX - x1;
-      dy := srcY - y1;
-      
-      // Interpolar cada canal
-      for c := 0 to 2 do
-      begin
-        c1 := MATRIX[x1, y1, c];
-        c2 := MATRIX[x2, y1, c];
-        c3 := MATRIX[x1, y2, c];
-        c4 := MATRIX[x2, y2, c];
-        
-        newMatrix[x, y, c] := Round(
-          c1 * (1 - dx) * (1 - dy) +
-          c2 * dx * (1 - dy) +
-          c3 * (1 - dx) * dy +
-          c4 * dx * dy
-        );
-      end;
-    end;
+  // Aplicar aumento de escala con interpolación bilineal
+  ImageProcessing.ScaleUpBilinear(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix, newWidth, newHeight);
   
   // Actualizar dimensiones e imagen
   IMG_WIDTH := newWidth;
   IMG_HEIGHT := newHeight;
-  MATRIX := newMatrix;
+  MATRIX := resultMatrix;
   
   BMAP.SetSize(IMG_WIDTH, IMG_HEIGHT);
   ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
@@ -736,6 +568,58 @@ end;
 procedure TForm1.MenuItem2Click(Sender: TObject);
 begin
 
+end;
+
+procedure TForm1.SuavizadoClick(Sender: TObject);
+var
+  resultMatrix: RGB_MATRIX;
+  maskSizeStr, trimAmountStr: string;
+  maskSize, trimAmount: Integer;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Solicitar parámetros al usuario
+  maskSizeStr := '5';
+  if not InputQuery('Suavizado Recortado', 'Tamaño de máscara (t×t, impar):', maskSizeStr) then
+    Exit;
+  
+  maskSize := StrToIntDef(maskSizeStr, 5);
+  if (maskSize < 3) or (maskSize > 15) or (maskSize mod 2 = 0) then
+  begin
+    ShowMessage('El tamaño debe ser impar entre 3 y 15');
+    Exit;
+  end;
+  
+  trimAmountStr := '2';
+  if not InputQuery('Suavizado Recortado', 'Cantidad a descartar de cada extremo (a):', trimAmountStr) then
+    Exit;
+    
+  trimAmount := StrToIntDef(trimAmountStr, 2);
+  if (trimAmount < 0) or (trimAmount >= maskSize * maskSize div 4) then
+  begin
+    ShowMessage('Valor inválido. Debe ser menor que ' + IntToStr(maskSize * maskSize div 4));
+    Exit;
+  end;
+
+  // Crear matriz para el resultado
+  SetLength(resultMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
+  
+  // Aplicar suavizado recortado
+  ImageProcessing.TrimmedSmoothing(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix, maskSize, trimAmount);
+  
+  // Actualizar la matriz y la imagen
+  MATRIX := resultMatrix;
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+  
+  ShowMessage(Format('Suavizado aplicado: máscara %d×%d, descartando %d valores extremos', [maskSize, maskSize, trimAmount]));
 end;
 
 
@@ -788,82 +672,15 @@ end;
 procedure TForm1.Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 var
   imgX, imgY: Integer;
+  isValid: Boolean;
   r, g, b: Byte;
   h, s, v: Double;
-  scaleX, scaleY: Double;
-  offsetX, offsetY: Integer;
-  displayWidth, displayHeight: Integer;
 begin
-  // Verificar que haya una imagen cargada
-  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
-    Exit;
+  // Calcular coordenadas de imagen desde coordenadas del mouse
+  UIHelpers.CalculateImageCoordinates(Image1, IMG_WIDTH, IMG_HEIGHT, X, Y,
+    Image1.Stretch, Image1.Proportional, Image1.Center, imgX, imgY, isValid);
   
-  // Calcular la escala y offset debido a Stretch y Center
-  if Image1.Stretch then
-  begin
-    if Image1.Proportional then
-    begin
-      // Calcular aspecto ratio
-      scaleX := Image1.Width / IMG_WIDTH;
-      scaleY := Image1.Height / IMG_HEIGHT;
-      
-      // Usar la menor escala para mantener proporciones
-      if scaleX < scaleY then
-      begin
-        displayWidth := Image1.Width;
-        displayHeight := Round(IMG_HEIGHT * scaleX);
-        offsetX := 0;
-        offsetY := (Image1.Height - displayHeight) div 2;
-      end
-      else
-      begin
-        displayWidth := Round(IMG_WIDTH * scaleY);
-        displayHeight := Image1.Height;
-        offsetX := (Image1.Width - displayWidth) div 2;
-        offsetY := 0;
-      end;
-      
-      // Ajustar coordenadas del mouse
-      X := X - offsetX;
-      Y := Y - offsetY;
-      
-      // Convertir a coordenadas de imagen
-      if displayWidth > 0 then
-        imgX := Round((X * IMG_WIDTH) / displayWidth)
-      else
-        Exit;
-        
-      if displayHeight > 0 then
-        imgY := Round((Y * IMG_HEIGHT) / displayHeight)
-      else
-        Exit;
-    end
-    else
-    begin
-      // Sin proporcional, solo stretch
-      imgX := Round((X * IMG_WIDTH) / Image1.Width);
-      imgY := Round((Y * IMG_HEIGHT) / Image1.Height);
-    end;
-  end
-  else
-  begin
-    // Sin stretch, las coordenadas son directas (considerar center)
-    if Image1.Center then
-    begin
-      offsetX := (Image1.Width - IMG_WIDTH) div 2;
-      offsetY := (Image1.Height - IMG_HEIGHT) div 2;
-      imgX := X - offsetX;
-      imgY := Y - offsetY;
-    end
-    else
-    begin
-      imgX := X;
-      imgY := Y;
-    end;
-  end;
-  
-  // Verificar que las coordenadas estén dentro de los límites
-  if (imgX < 0) or (imgX >= IMG_WIDTH) or (imgY < 0) or (imgY >= IMG_HEIGHT) then
+  if not isValid then
   begin
     StatusBar1.Panels[1].Text := 'Posición: fuera de imagen';
     Exit;
@@ -887,9 +704,8 @@ end;
 
 procedure TForm1.RotacionDerClick(Sender: TObject);
 var
-  newMatrix: RGB_MATRIX;
-  x, y, c: Integer;
-  temp: Integer;
+  newWidth, newHeight: Integer;
+  resultMatrix: RGB_MATRIX;
 begin
   if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
   begin
@@ -897,20 +713,13 @@ begin
     Exit;
   end;
 
-  // Crear matriz para la imagen rotada (intercambiar dimensiones)
-  SetLength(newMatrix, IMG_HEIGHT, IMG_WIDTH, 3);
+  // Aplicar rotación 90° a la derecha
+  ImageProcessing.RotateRight90(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix, newWidth, newHeight);
   
-  // Rotar 90° a la derecha (sentido horario)
-  for x := 0 to IMG_WIDTH - 1 do
-    for y := 0 to IMG_HEIGHT - 1 do
-      for c := 0 to 2 do
-        newMatrix[IMG_HEIGHT - 1 - y, x, c] := MATRIX[x, y, c];
-  
-  // Intercambiar dimensiones
-  temp := IMG_WIDTH;
-  IMG_WIDTH := IMG_HEIGHT;
-  IMG_HEIGHT := temp;
-  MATRIX := newMatrix;
+  // Actualizar dimensiones e imagen
+  IMG_WIDTH := newWidth;
+  IMG_HEIGHT := newHeight;
+  MATRIX := resultMatrix;
   
   BMAP.SetSize(IMG_WIDTH, IMG_HEIGHT);
   ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
@@ -925,9 +734,8 @@ end;
 
 procedure TForm1.RotacionIzqClick(Sender: TObject);
 var
-  newMatrix: RGB_MATRIX;
-  x, y, c: Integer;
-  temp: Integer;
+  newWidth, newHeight: Integer;
+  resultMatrix: RGB_MATRIX;
 begin
   if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
   begin
@@ -935,20 +743,13 @@ begin
     Exit;
   end;
 
-  // Crear matriz para la imagen rotada (intercambiar dimensiones)
-  SetLength(newMatrix, IMG_HEIGHT, IMG_WIDTH, 3);
+  // Aplicar rotación 90° a la izquierda
+  ImageProcessing.RotateLeft90(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix, newWidth, newHeight);
   
-  // Rotar 90° a la izquierda (sentido antihorario)
-  for x := 0 to IMG_WIDTH - 1 do
-    for y := 0 to IMG_HEIGHT - 1 do
-      for c := 0 to 2 do
-        newMatrix[y, IMG_WIDTH - 1 - x, c] := MATRIX[x, y, c];
-  
-  // Intercambiar dimensiones
-  temp := IMG_WIDTH;
-  IMG_WIDTH := IMG_HEIGHT;
-  IMG_HEIGHT := temp;
-  MATRIX := newMatrix;
+  // Actualizar dimensiones e imagen
+  IMG_WIDTH := newWidth;
+  IMG_HEIGHT := newHeight;
+  MATRIX := resultMatrix;
   
   BMAP.SetSize(IMG_WIDTH, IMG_HEIGHT);
   ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
@@ -984,6 +785,33 @@ begin
   
   // Sincronizar matriz HSV
   ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+end;
+
+procedure TForm1.TexturaClick(Sender: TObject);
+var
+  resultMatrix: RGB_MATRIX;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear matriz para el resultado
+  SetLength(resultMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
+  
+  // Aplicar codificación de textura (Local Binary Pattern)
+  ImageProcessing.EncodedTexture(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix);
+  
+  // Actualizar la matriz y la imagen
+  MATRIX := resultMatrix;
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+  
+  ShowMessage('Textura codificada aplicada (Local Binary Pattern en regiones 3×3)');
 end;
 
 end.

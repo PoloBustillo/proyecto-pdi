@@ -221,6 +221,17 @@ object Form1: TForm1
         OnClick = SobelClick
       end
     end
+    object Espaciales: TMenuItem
+      Caption = 'Espaciales'
+      object Suavizado: TMenuItem
+        Caption = 'Suavizado'
+        OnClick = SuavizadoClick
+      end
+      object Textura: TMenuItem
+        Caption = 'Textura'
+        OnClick = TexturaClick
+      end
+    end
     object Transformaciones: TMenuItem
       Caption = 'Transformaciones'
       object EscalaMas: TMenuItem
