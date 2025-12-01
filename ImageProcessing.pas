@@ -47,6 +47,16 @@ procedure ApplyGammaToHSVValue(imageHeight, imageWidth: Integer;
   const rgbResult: RGB_MATRIX; var hsvMatrix: HSV_MATRIX);
 procedure ApplyContrast(var matrix: RGB_MATRIX; imageHeight, imageWidth: Integer;
   methodIndex: Integer; percentile: Double);
+procedure AutoContrast(imageHeight, imageWidth: Integer; var matrix: RGB_MATRIX);
+procedure AutoContrastHSV(imageHeight, imageWidth: Integer; var hsvMatrix: HSV_MATRIX);
+
+{ Filtros de detección de bordes }
+procedure EdgeDetectionDifference(imageHeight, imageWidth: Integer; 
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
+procedure EdgeDetectionPrewitt(imageHeight, imageWidth: Integer; 
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
+procedure EdgeDetectionSobel(imageHeight, imageWidth: Integer; 
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
 
 { Funciones de análisis }
 procedure GenerateHistogram(imageHeight, imageWidth: Integer; 
@@ -518,6 +528,316 @@ begin
       intensity := (r + g + b) div 3;
       Inc(histData.Intensity[intensity]);
     end;
+end;
+
+{ Contraste Automático para RGB }
+procedure AutoContrast(imageHeight, imageWidth: Integer; var matrix: RGB_MATRIX);
+var
+  x, y, c: Integer;
+  minVal, maxVal: array[0..2] of Byte;  // Min y Max por canal (R, G, B)
+  range: array[0..2] of Integer;
+  value: Byte;
+begin
+  // Inicializar valores extremos
+  for c := 0 to 2 do
+  begin
+    minVal[c] := 255;
+    maxVal[c] := 0;
+  end;
+  
+  // Encontrar valores mínimos y máximos por canal
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      for c := 0 to 2 do
+      begin
+        value := matrix[x, y, c];
+        if value < minVal[c] then
+          minVal[c] := value;
+        if value > maxVal[c] then
+          maxVal[c] := value;
+      end;
+  
+  // Calcular rangos por canal
+  for c := 0 to 2 do
+    range[c] := maxVal[c] - minVal[c];
+  
+  // Aplicar estiramiento del histograma por canal
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      for c := 0 to 2 do
+      begin
+        if range[c] > 0 then
+        begin
+          // Fórmula: newValue = ((value - min) * 255) / range
+          value := matrix[x, y, c];
+          matrix[x, y, c] := Round(((value - minVal[c]) * 255.0) / range[c]);
+        end;
+        // Si range = 0 (todo el canal es uniforme), no modificar
+      end;
+end;
+
+{ Contraste Automático para HSV (solo canal V) }
+procedure AutoContrastHSV(imageHeight, imageWidth: Integer; var hsvMatrix: HSV_MATRIX);
+var
+  x, y: Integer;
+  minV, maxV: Double;
+  rangeV: Double;
+  v: Double;
+begin
+  // Inicializar valores extremos para canal V (brillo)
+  minV := 1.0;
+  maxV := 0.0;
+  
+  // Encontrar valores mínimo y máximo del canal V
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+    begin
+      v := hsvMatrix[x, y, 2];  // Canal V (brillo)
+      if v < minV then
+        minV := v;
+      if v > maxV then
+        maxV := v;
+    end;
+  
+  // Calcular rango
+  rangeV := maxV - minV;
+  
+  // Aplicar estiramiento del histograma solo al canal V
+  if rangeV > 0.001 then  // Evitar división por cero (umbral para Double)
+  begin
+    for x := 0 to imageWidth - 1 do
+      for y := 0 to imageHeight - 1 do
+      begin
+        v := hsvMatrix[x, y, 2];
+        // Estirar V al rango completo [0.0, 1.0]
+        hsvMatrix[x, y, 2] := (v - minV) / rangeV;
+        // H y S se preservan sin cambios
+      end;
+  end;
+  // Si rangeV ≈ 0 (toda la imagen tiene el mismo brillo), no modificar
+end;
+
+{ Filtros de Detección de Bordes }
+
+{ Detección de bordes por Diferencia (Roberts) }
+procedure EdgeDetectionDifference(imageHeight, imageWidth: Integer; 
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
+var
+  x, y: Integer;
+  gx, gy, magnitude: Integer;
+  gray: array of array of Byte;
+  val: Byte;
+begin
+  if (imageWidth <= 1) or (imageHeight <= 1) then
+    Exit;
+    
+  SetLength(dstMatrix, imageWidth, imageHeight, 3);
+  SetLength(gray, imageWidth, imageHeight);
+  
+  // Convertir a escala de grises usando luminancia
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      gray[x, y] := Round(0.299 * srcMatrix[x, y, 0] + 
+                          0.587 * srcMatrix[x, y, 1] + 
+                          0.114 * srcMatrix[x, y, 2]);
+  
+  // Aplicar operador de diferencia (Roberts Cross)
+  // Gx = |f(x+1,y+1) - f(x,y)|
+  // Gy = |f(x+1,y) - f(x,y+1)|
+  for x := 0 to imageWidth - 2 do
+    for y := 0 to imageHeight - 2 do
+    begin
+      gx := Abs(gray[x + 1, y + 1] - gray[x, y]);
+      gy := Abs(gray[x + 1, y] - gray[x, y + 1]);
+      magnitude := gx + gy;
+      
+      if magnitude > 255 then
+        val := 255
+      else
+        val := Byte(magnitude);
+        
+      dstMatrix[x, y, 0] := val;
+      dstMatrix[x, y, 1] := val;
+      dstMatrix[x, y, 2] := val;
+    end;
+  
+  // Rellenar bordes con negro
+  for x := 0 to imageWidth - 1 do
+  begin
+    dstMatrix[x, imageHeight - 1, 0] := 0;
+    dstMatrix[x, imageHeight - 1, 1] := 0;
+    dstMatrix[x, imageHeight - 1, 2] := 0;
+  end;
+  for y := 0 to imageHeight - 1 do
+  begin
+    dstMatrix[imageWidth - 1, y, 0] := 0;
+    dstMatrix[imageWidth - 1, y, 1] := 0;
+    dstMatrix[imageWidth - 1, y, 2] := 0;
+  end;
+end;
+
+{ Detección de bordes por Prewitt }
+procedure EdgeDetectionPrewitt(imageHeight, imageWidth: Integer; 
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
+var
+  x, y, i, j: Integer;
+  gx, gy, magnitude: Integer;
+  gray: array of array of Byte;
+  val: Byte;
+  // Máscaras de Prewitt
+  kernelX: array[-1..1, -1..1] of Integer = (
+    (-1, 0, 1),
+    (-1, 0, 1),
+    (-1, 0, 1)
+  );
+  kernelY: array[-1..1, -1..1] of Integer = (
+    (-1, -1, -1),
+    ( 0,  0,  0),
+    ( 1,  1,  1)
+  );
+begin
+  if (imageWidth <= 2) or (imageHeight <= 2) then
+    Exit;
+    
+  SetLength(dstMatrix, imageWidth, imageHeight, 3);
+  SetLength(gray, imageWidth, imageHeight);
+  
+  // Convertir a escala de grises usando luminancia
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      gray[x, y] := Round(0.299 * srcMatrix[x, y, 0] + 
+                          0.587 * srcMatrix[x, y, 1] + 
+                          0.114 * srcMatrix[x, y, 2]);
+  
+  // Aplicar convolución con máscaras de Prewitt
+  for x := 1 to imageWidth - 2 do
+    for y := 1 to imageHeight - 2 do
+    begin
+      gx := 0;
+      gy := 0;
+      
+      // Aplicar máscaras 3x3
+      for i := -1 to 1 do
+        for j := -1 to 1 do
+        begin
+          gx := gx + (gray[x + i, y + j] * kernelX[i, j]);
+          gy := gy + (gray[x + i, y + j] * kernelY[i, j]);
+        end;
+      
+      // Magnitud del gradiente: sqrt(Gx² + Gy²) ≈ |Gx| + |Gy|
+      magnitude := Abs(gx) + Abs(gy);
+      
+      if magnitude > 255 then
+        val := 255
+      else
+        val := Byte(magnitude);
+        
+      dstMatrix[x, y, 0] := val;
+      dstMatrix[x, y, 1] := val;
+      dstMatrix[x, y, 2] := val;
+    end;
+  
+  // Rellenar bordes con negro
+  for x := 0 to imageWidth - 1 do
+  begin
+    dstMatrix[x, 0, 0] := 0;
+    dstMatrix[x, 0, 1] := 0;
+    dstMatrix[x, 0, 2] := 0;
+    dstMatrix[x, imageHeight - 1, 0] := 0;
+    dstMatrix[x, imageHeight - 1, 1] := 0;
+    dstMatrix[x, imageHeight - 1, 2] := 0;
+  end;
+  for y := 0 to imageHeight - 1 do
+  begin
+    dstMatrix[0, y, 0] := 0;
+    dstMatrix[0, y, 1] := 0;
+    dstMatrix[0, y, 2] := 0;
+    dstMatrix[imageWidth - 1, y, 0] := 0;
+    dstMatrix[imageWidth - 1, y, 1] := 0;
+    dstMatrix[imageWidth - 1, y, 2] := 0;
+  end;
+end;
+
+{ Detección de bordes por Sobel }
+procedure EdgeDetectionSobel(imageHeight, imageWidth: Integer; 
+  const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
+var
+  x, y, i, j: Integer;
+  gx, gy, magnitude: Integer;
+  gray: array of array of Byte;
+  val: Byte;
+  // Máscaras de Sobel
+  kernelX: array[-1..1, -1..1] of Integer = (
+    (-1, 0, 1),
+    (-2, 0, 2),
+    (-1, 0, 1)
+  );
+  kernelY: array[-1..1, -1..1] of Integer = (
+    (-1, -2, -1),
+    ( 0,  0,  0),
+    ( 1,  2,  1)
+  );
+begin
+  if (imageWidth <= 2) or (imageHeight <= 2) then
+    Exit;
+    
+  SetLength(dstMatrix, imageWidth, imageHeight, 3);
+  SetLength(gray, imageWidth, imageHeight);
+  
+  // Convertir a escala de grises usando luminancia
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      gray[x, y] := Round(0.299 * srcMatrix[x, y, 0] + 
+                          0.587 * srcMatrix[x, y, 1] + 
+                          0.114 * srcMatrix[x, y, 2]);
+  
+  // Aplicar convolución con máscaras de Sobel
+  for x := 1 to imageWidth - 2 do
+    for y := 1 to imageHeight - 2 do
+    begin
+      gx := 0;
+      gy := 0;
+      
+      // Aplicar máscaras 3x3
+      for i := -1 to 1 do
+        for j := -1 to 1 do
+        begin
+          gx := gx + (gray[x + i, y + j] * kernelX[i, j]);
+          gy := gy + (gray[x + i, y + j] * kernelY[i, j]);
+        end;
+      
+      // Magnitud del gradiente: sqrt(Gx² + Gy²) ≈ |Gx| + |Gy|
+      magnitude := Abs(gx) + Abs(gy);
+      
+      if magnitude > 255 then
+        val := 255
+      else
+        val := Byte(magnitude);
+        
+      dstMatrix[x, y, 0] := val;
+      dstMatrix[x, y, 1] := val;
+      dstMatrix[x, y, 2] := val;
+    end;
+  
+  // Rellenar bordes con negro
+  for x := 0 to imageWidth - 1 do
+  begin
+    dstMatrix[x, 0, 0] := 0;
+    dstMatrix[x, 0, 1] := 0;
+    dstMatrix[x, 0, 2] := 0;
+    dstMatrix[x, imageHeight - 1, 0] := 0;
+    dstMatrix[x, imageHeight - 1, 1] := 0;
+    dstMatrix[x, imageHeight - 1, 2] := 0;
+  end;
+  for y := 0 to imageHeight - 1 do
+  begin
+    dstMatrix[0, y, 0] := 0;
+    dstMatrix[0, y, 1] := 0;
+    dstMatrix[0, y, 2] := 0;
+    dstMatrix[imageWidth - 1, y, 0] := 0;
+    dstMatrix[imageWidth - 1, y, 1] := 0;
+    dstMatrix[imageWidth - 1, y, 2] := 0;
+  end;
 end;
 
 end.

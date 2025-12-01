@@ -89,7 +89,7 @@ object Form1: TForm1
       end
     end
     object MenuItem5: TMenuItem
-      Caption = 'Color'
+      Caption = 'Filtros Basicos'
       object Restaurar: TMenuItem
         Caption = 'Restaurar imagen original'
         OnClick = RestaurarClick
@@ -113,9 +113,24 @@ object Form1: TForm1
         Caption = 'Filtro gamma'
         OnClick = GammaClick
       end
-      object MenuItem11: TMenuItem
+      object Contraste: TMenuItem
         Caption = 'Contraste automático'
-        OnClick = MenuItem11Click
+        OnClick = ContrasteClick
+      end
+    end
+    object MenuItem4: TMenuItem
+      Caption = 'Bordes'
+      object Diferencia: TMenuItem
+        Caption = 'Diferencia'
+        OnClick = DiferenciaClick
+      end
+      object Prewitt: TMenuItem
+        Caption = 'Prewitt'
+        OnClick = PrewittClick
+      end
+      object Sobel: TMenuItem
+        Caption = 'Sobel'
+        OnClick = SobelClick
       end
     end
   end

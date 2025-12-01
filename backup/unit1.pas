@@ -21,19 +21,25 @@ type
     Guardar: TMenuItem;
     MenuItem1: TMenuItem;
     Gamma: TMenuItem;
+    Contraste: TMenuItem;
     MenuItem11: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
     Histograma: TMenuItem;
     HSV: TMenuItem;
+    MenuItem4: TMenuItem;
     MenuItem5: TMenuItem;
     Binarizacion: TMenuItem;
+    Diferencia: TMenuItem;
+    Sobel: TMenuItem;
+    Prewitt: TMenuItem;
     Restaurar: TMenuItem;
     OpenDialog1: TOpenDialog;
     Panel1: TPanel;
     SaveDialog1: TSaveDialog;
     StatusBar1: TStatusBar;
 
+    procedure DiferenciaClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure AbrirClick(Sender: TObject);
     procedure GrisesClick(Sender: TObject);
@@ -42,9 +48,12 @@ type
     procedure BinarizacionClick(Sender: TObject);
     procedure GammaClick(Sender: TObject);
     procedure HistogramaClick(Sender: TObject);
+    procedure ContrasteClick(Sender: TObject);
     procedure MenuItem11Click(Sender: TObject);
+    procedure PrewittClick(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
     procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure SobelClick(Sender: TObject);
   end;
 
 var
@@ -72,6 +81,31 @@ begin
   // Inicializar StatusBar
   if StatusBar1.Panels.Count > 0 then
     StatusBar1.Panels[0].Text := 'Modo: RGB';
+end;
+
+procedure TForm1.DiferenciaClick(Sender: TObject);
+var
+  resultMatrix: RGB_MATRIX;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear matriz para el resultado
+  SetLength(resultMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
+  
+  // Aplicar detección de bordes por diferencia
+  ImageProcessing.EdgeDetectionDifference(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix);
+  
+  // Actualizar la matriz y la imagen
+  MATRIX := resultMatrix;
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
 end;
 
 procedure TForm1.AbrirClick(Sender: TObject);
@@ -458,9 +492,90 @@ begin
   ShowImageHistogram;
 end;
 
-procedure TForm1.MenuItem11Click(Sender: TObject);
+procedure TForm1.ContrasteClick(Sender: TObject);
 begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
 
+  // Aplicar contraste automático según el modo actual
+  if COLOR_MODE = 3 then  // Modo HSV
+  begin
+    // Aplicar contraste automático solo al canal V (brillo)
+    ImageProcessing.AutoContrastHSV(IMG_HEIGHT, IMG_WIDTH, CONVERTED_HSV_MATRIX);
+    
+    // Convertir HSV a RGB para visualización
+    ImageProcessing.HSVMatrixToRGBMatrix(IMG_HEIGHT, IMG_WIDTH, CONVERTED_HSV_MATRIX, MATRIX);
+    ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+    Image1.Picture.Assign(BMAP);
+  end
+  else  // Modo RGB
+  begin
+    // Aplicar contraste automático a cada canal RGB independientemente
+    ImageProcessing.AutoContrast(IMG_HEIGHT, IMG_WIDTH, MATRIX);
+    ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+    Image1.Picture.Assign(BMAP);
+    
+    // Sincronizar matriz HSV
+    ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+  end;
+end;
+
+procedure TForm1.MenuItem11Click(Sender: TObject);
+var
+  x, y, c: Integer;
+  value: Byte;
+  newValue: Integer;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Reducir contraste: comprimir valores al rango [64, 192]
+  for x := 0 to IMG_WIDTH - 1 do
+    for y := 0 to IMG_HEIGHT - 1 do
+      for c := 0 to 2 do
+      begin
+        value := MATRIX[x, y, c];
+        // Mapear [0,255] → [64,192]
+        newValue := 64 + Round((value * 128) / 255);
+        MATRIX[x, y, c] := Byte(newValue);
+      end;
+  
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+end;
+
+procedure TForm1.PrewittClick(Sender: TObject);
+var
+  resultMatrix: RGB_MATRIX;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear matriz para el resultado
+  SetLength(resultMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
+  
+  // Aplicar filtro de Prewitt
+  ImageProcessing.EdgeDetectionPrewitt(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix);
+  
+  // Actualizar la matriz y la imagen
+  MATRIX := resultMatrix;
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
 end;
 
 procedure TForm1.RestaurarClick(Sender: TObject);
@@ -582,6 +697,31 @@ begin
   StatusBar1.Panels[1].Text := Format('Pos: (%d,%d)', [imgX, imgY]);
   StatusBar1.Panels[2].Text := Format('RGB: (%d,%d,%d)', [r, g, b]);
   StatusBar1.Panels[3].Text := Format('HSV: (%.0f°,%.2f,%.2f)', [h, s, v]);
+end;
+
+procedure TForm1.SobelClick(Sender: TObject);
+var
+  resultMatrix: RGB_MATRIX;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear matriz para el resultado
+  SetLength(resultMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
+  
+  // Aplicar filtro de Sobel
+  ImageProcessing.EdgeDetectionSobel(IMG_HEIGHT, IMG_WIDTH, MATRIX, resultMatrix);
+  
+  // Actualizar la matriz y la imagen
+  MATRIX := resultMatrix;
+  ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
+  Image1.Picture.Assign(BMAP);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
 end;
 
 end.
