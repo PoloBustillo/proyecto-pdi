@@ -8,6 +8,7 @@ uses
   Classes, SysUtils, Graphics, Controls, StdCtrls, ComCtrls, Dialogs,
   ImageProcessing, FormHistogram;
 
+
 { Funciones de utilidad para la interfaz de usuario }
 procedure ShowImageHistogram(imageWidth, imageHeight: Integer;
   const matrix: RGB_MATRIX; const hsvMatrix: HSV_MATRIX; colorMode: Integer);
