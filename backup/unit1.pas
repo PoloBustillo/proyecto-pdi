@@ -7,13 +7,14 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Menus, ComCtrls,
   ExtCtrls, StdCtrls, ExtDlgs, TAGraph, TASeries, TAChartUtils, Math,
-  ImageProcessing, FormHistogram, FormBinarize, FormGamma, UIHelpers;
+  ImageProcessing, FormHistogram, FormBinarize, FormGamma, FormFourier, FormALU, UIHelpers;
 
 type
 
   { TForm1 }
 
   TForm1 = class(TForm)
+    FiltrosColor: TMenuItem;
     Image1: TImage;
     MainMenu1: TMainMenu;
     Abrir: TMenuItem;
@@ -23,9 +24,10 @@ type
     Contraste: TMenuItem;
     HSV: TMenuItem;
     Grises: TMenuItem;
-    MenuItem1: TMenuItem;
     ContrasteReducir: TMenuItem;
     Espaciales: TMenuItem;
+    Fourier: TMenuItem;
+    ALU: TMenuItem;
     Textura: TMenuItem;
     Suavizado: TMenuItem;
     Transformaciones: TMenuItem;
@@ -39,7 +41,6 @@ type
     Graficos: TMenuItem;
     Histograma: TMenuItem;
     Bordes: TMenuItem;
-    FiltrosColor: TMenuItem;
     Binarizacion: TMenuItem;
     Diferencia: TMenuItem;
     Sobel: TMenuItem;
@@ -49,11 +50,16 @@ type
     SaveDialog1: TSaveDialog;
     StatusBar1: TStatusBar;
 
+    procedure ALUClick(Sender: TObject);
+    procedure ANDOperatorClick(Sender: TObject);
     procedure ContrasteReducirClick(Sender: TObject);
     procedure DiferenciaClick(Sender: TObject);
+    procedure DIVOperatorClick(Sender: TObject);
     procedure EscalaMenosClick(Sender: TObject);
+    procedure EXPClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure AbrirClick(Sender: TObject);
+    procedure FourierClick(Sender: TObject);
     procedure GrisesClick(Sender: TObject);
     procedure GuardarClick(Sender: TObject);
     procedure HSVClick(Sender: TObject);
@@ -161,6 +167,7 @@ begin
   ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
 end;
 
+
 procedure TForm1.ContrasteReducirClick(Sender: TObject);
 var
   x, y, c: Integer;
@@ -189,6 +196,43 @@ begin
 
   // Sincronizar matriz HSV
   ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+end;
+
+procedure TForm1.ANDOperatorClick(Sender: TObject);
+begin
+
+end;
+
+procedure TForm1.ALUClick(Sender: TObject);
+var
+  ALUForm: TFormALUOperations;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear y mostrar el formulario de operaciones ALU
+  ALUForm := TFormALUOperations.Create(Self);
+  try
+    // En modo HSV, convertir a RGB temporalmente para el formulario
+    if COLOR_MODE = 3 then
+    begin
+      ImageProcessing.HSVMatrixToRGBMatrix(IMG_HEIGHT, IMG_WIDTH, CONVERTED_HSV_MATRIX, MATRIX);
+      ALUForm.SetSourceImage(MATRIX, IMG_HEIGHT, IMG_WIDTH);
+    end
+    else
+    begin
+      // Pasar la imagen actual al formulario (ya en RGB)
+      ALUForm.SetSourceImage(MATRIX, IMG_HEIGHT, IMG_WIDTH);
+    end;
+
+    // Mostrar el formulario de manera modal
+    ALUForm.ShowModal;
+  finally
+    ALUForm.Free;
+  end;
 end;
 
 procedure TForm1.AbrirClick(Sender: TObject);
@@ -224,6 +268,38 @@ begin
     COLOR_MODE := 1;
     StatusBar1.Panels[0].Text := 'Modo: RGB';
     HSV.Caption := 'Cambiar a HSV';
+  end;
+end;
+
+procedure TForm1.FourierClick(Sender: TObject);
+var
+  FourierForm: TFormFourierTransform;
+begin
+  if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
+  begin
+    ShowMessage('Primero debes cargar una imagen');
+    Exit;
+  end;
+
+  // Crear y mostrar el formulario de Transformada de Fourier
+  FourierForm := TFormFourierTransform.Create(Self);
+  try
+    // En modo HSV, convertir a RGB temporalmente para el formulario
+    if COLOR_MODE = 3 then
+    begin
+      ImageProcessing.HSVMatrixToRGBMatrix(IMG_HEIGHT, IMG_WIDTH, CONVERTED_HSV_MATRIX, MATRIX);
+      FourierForm.SetSourceImage(MATRIX, IMG_HEIGHT, IMG_WIDTH);
+    end
+    else
+    begin
+      // Pasar la imagen actual al formulario (ya en RGB)
+      FourierForm.SetSourceImage(MATRIX, IMG_HEIGHT, IMG_WIDTH);
+    end;
+
+    // Mostrar el formulario de manera modal
+    FourierForm.ShowModal;
+  finally
+    FourierForm.Free;
   end;
 end;
 
@@ -564,7 +640,6 @@ begin
   ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
 end;
 
-
 procedure TForm1.SuavizadoClick(Sender: TObject);
 var
   resultMatrix: RGB_MATRIX;
@@ -808,5 +883,6 @@ begin
   
   ShowMessage('Textura codificada aplicada (Local Binary Pattern en regiones 3×3)');
 end;
+
 
 end.

@@ -9,7 +9,7 @@
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="5"/>
         <CursorPos X="115" Y="14"/>
-        <UsageCount Value="123"/>
+        <UsageCount Value="125"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
@@ -19,11 +19,10 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Unit1"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
         <TopLine Value="27"/>
-        <CursorPos X="95" Y="58"/>
-        <UsageCount Value="123"/>
+        <CursorPos X="81" Y="46"/>
+        <UsageCount Value="125"/>
         <Bookmarks Count="1">
           <Item0 X="89" Y="29" ID="9"/>
         </Bookmarks>
@@ -39,7 +38,7 @@
         <UnitName Value="Unit2"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="16" Y="4"/>
-        <UsageCount Value="65"/>
+        <UsageCount Value="67"/>
         <Bookmarks Count="1">
           <Item0 X="16" Y="4" ID="9"/>
         </Bookmarks>
@@ -50,7 +49,7 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="61"/>
         <CursorPos X="11" Y="74"/>
-        <UsageCount Value="29"/>
+        <UsageCount Value="28"/>
       </Unit3>
       <Unit4>
         <Filename Value="FormHistogram.pas"/>
@@ -61,7 +60,7 @@
         <TopLine Value="34"/>
         <CursorPos X="87" Y="45"/>
         <ComponentState Value="1"/>
-        <UsageCount Value="34"/>
+        <UsageCount Value="35"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit4>
@@ -70,7 +69,7 @@
         <EditorIndex Value="8"/>
         <TopLine Value="956"/>
         <CursorPos X="23" Y="972"/>
-        <UsageCount Value="34"/>
+        <UsageCount Value="35"/>
         <Loaded Value="True"/>
       </Unit5>
       <Unit6>
@@ -79,7 +78,7 @@
         <EditorIndex Value="6"/>
         <TopLine Value="203"/>
         <CursorPos X="3" Y="220"/>
-        <UsageCount Value="33"/>
+        <UsageCount Value="34"/>
         <Loaded Value="True"/>
       </Unit6>
       <Unit7>
@@ -89,7 +88,7 @@
         <ResourceBaseClass Value="Form"/>
         <TopLine Value="110"/>
         <CursorPos X="19" Y="117"/>
-        <UsageCount Value="33"/>
+        <UsageCount Value="34"/>
         <Loaded Value="True"/>
       </Unit7>
       <Unit8>
@@ -99,7 +98,7 @@
         <ResourceBaseClass Value="Form"/>
         <EditorIndex Value="1"/>
         <CursorPos X="69" Y="28"/>
-        <UsageCount Value="32"/>
+        <UsageCount Value="33"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit8>
@@ -108,7 +107,7 @@
         <EditorIndex Value="4"/>
         <TopLine Value="17"/>
         <CursorPos X="65" Y="41"/>
-        <UsageCount Value="11"/>
+        <UsageCount Value="12"/>
         <Loaded Value="True"/>
       </Unit9>
       <Unit10>
@@ -116,10 +115,11 @@
         <ComponentName Value="FormFourierTransform"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="3"/>
-        <TopLine Value="40"/>
-        <CursorPos X="59" Y="57"/>
-        <UsageCount Value="11"/>
+        <TopLine Value="39"/>
+        <CursorPos X="79" Y="73"/>
+        <UsageCount Value="12"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit10>

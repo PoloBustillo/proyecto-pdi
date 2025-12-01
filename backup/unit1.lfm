@@ -173,15 +173,16 @@ object Form1: TForm1
         ShortCut = 16456
         OnClick = HistogramaClick
       end
+      object Fourier: TMenuItem
+        Caption = 'Fourier'
+        OnClick = FourierClick
+      end
     end
     object Color: TMenuItem
       Caption = 'Color'
       object HSV: TMenuItem
         Caption = 'Cambiar a HSV'
         OnClick = HSVClick
-      end
-      object MenuItem1: TMenuItem
-        Caption = '-'
       end
       object Grises: TMenuItem
         Caption = 'Escala de grises'
@@ -250,6 +251,10 @@ object Form1: TForm1
         Caption = 'Rotacion<'
         OnClick = RotacionIzqClick
       end
+    end
+    object ALU: TMenuItem
+      Caption = 'ALU'
+      OnClick = ALUClick
     end
   end
   object OpenDialog1: TOpenDialog

@@ -178,7 +178,7 @@ object Form1: TForm1
         OnClick = FourierClick
       end
     end
-    object FiltrosColor: TMenuItem
+    object Color: TMenuItem
       Caption = 'Color'
       object HSV: TMenuItem
         Caption = 'Cambiar a HSV'
@@ -251,6 +251,10 @@ object Form1: TForm1
         Caption = 'Rotacion<'
         OnClick = RotacionIzqClick
       end
+    end
+    object ALU: TMenuItem
+      Caption = 'ALU'
+      OnClick = ALUClick
     end
   end
   object OpenDialog1: TOpenDialog

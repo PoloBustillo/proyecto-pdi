@@ -1,0 +1,302 @@
+object FormALUOperations: TFormALUOperations
+  Left = 300
+  Height = 600
+  Top = 150
+  Width = 900
+  Caption = 'Operaciones ALU'
+  ClientHeight = 600
+  ClientWidth = 900
+  Position = poScreenCenter
+  LCLVersion = '2.0.12.0'
+  object Panel1: TPanel
+    Left = 0
+    Height = 600
+    Top = 0
+    Width = 250
+    Align = alLeft
+    ClientHeight = 600
+    ClientWidth = 250
+    TabOrder = 0
+    object GroupBox1: TGroupBox
+      Left = 10
+      Height = 160
+      Top = 10
+      Width = 230
+      Caption = 'Tipo de Operación'
+      ClientHeight = 140
+      ClientWidth = 226
+      TabOrder = 0
+      object RadioLogicas: TRadioButton
+        Left = 16
+        Height = 23
+        Top = 10
+        Width = 154
+        Caption = 'Operaciones Lógicas'
+        Checked = True
+        OnClick = RadioLogicasClick
+        TabOrder = 0
+        TabStop = True
+      end
+      object RadioAritmeticas: TRadioButton
+        Left = 16
+        Height = 23
+        Top = 40
+        Width = 179
+        Caption = 'Operaciones Aritméticas'
+        OnClick = RadioAritmeticasClick
+        TabOrder = 1
+      end
+      object Label3: TLabel
+        Left = 16
+        Height = 17
+        Top = 80
+        Width = 96
+        Caption = 'Modo de Trabajo'
+        ParentColor = False
+      end
+      object ComboModo: TComboBox
+        Left = 16
+        Height = 27
+        Top = 100
+        Width = 195
+        ItemHeight = 0
+        ItemIndex = 0
+        Items.Strings = (
+          'Dos Imágenes'
+          'Imagen + Constante'
+        )
+        OnChange = ComboModoChange
+        Style = csDropDownList
+        TabOrder = 2
+        Text = 'Dos Imágenes'
+      end
+    end
+    object GroupBox2: TGroupBox
+      Left = 10
+      Height = 200
+      Top = 180
+      Width = 230
+      Caption = 'Operaciones Lógicas'
+      ClientHeight = 180
+      ClientWidth = 226
+      TabOrder = 1
+      object BtnAND: TButton
+        Left = 16
+        Height = 30
+        Top = 15
+        Width = 195
+        Caption = 'AND (Intersección)'
+        OnClick = BtnANDClick
+        TabOrder = 0
+      end
+      object BtnOR: TButton
+        Left = 16
+        Height = 30
+        Top = 52
+        Width = 195
+        Caption = 'OR (Unión)'
+        OnClick = BtnORClick
+        TabOrder = 1
+      end
+      object BtnXOR: TButton
+        Left = 16
+        Height = 30
+        Top = 89
+        Width = 195
+        Caption = 'XOR (Diferencia Exclusiva)'
+        OnClick = BtnXORClick
+        TabOrder = 2
+      end
+      object BtnNOT: TButton
+        Left = 16
+        Height = 30
+        Top = 126
+        Width = 195
+        Caption = 'NOT (Complemento)'
+        OnClick = BtnNOTClick
+        TabOrder = 3
+      end
+    end
+    object GroupBox3: TGroupBox
+      Left = 10
+      Height = 200
+      Top = 180
+      Width = 230
+      Caption = 'Operaciones Aritméticas'
+      ClientHeight = 180
+      ClientWidth = 226
+      TabOrder = 2
+      Visible = False
+      object BtnADD: TButton
+        Left = 16
+        Height = 30
+        Top = 15
+        Width = 195
+        Caption = 'ADD (Suma)'
+        OnClick = BtnADDClick
+        TabOrder = 0
+      end
+      object BtnSUB: TButton
+        Left = 16
+        Height = 30
+        Top = 52
+        Width = 195
+        Caption = 'SUB (Resta)'
+        OnClick = BtnSUBClick
+        TabOrder = 1
+      end
+      object BtnMUL: TButton
+        Left = 16
+        Height = 30
+        Top = 89
+        Width = 195
+        Caption = 'MUL (Multiplicación)'
+        OnClick = BtnMULClick
+        TabOrder = 2
+      end
+      object BtnDIV: TButton
+        Left = 16
+        Height = 30
+        Top = 126
+        Width = 195
+        Caption = 'DIV (División)'
+        OnClick = BtnDIVClick
+        TabOrder = 3
+      end
+    end
+    object GroupBox4: TGroupBox
+      Left = 10
+      Height = 120
+      Top = 390
+      Width = 230
+      Caption = 'Constante (0-255)'
+      ClientHeight = 100
+      ClientWidth = 226
+      TabOrder = 3
+      Visible = False
+      object Label1: TLabel
+        Left = 16
+        Height = 17
+        Top = 10
+        Width = 183
+        Caption = 'Valor para operaciones (0-255):'
+        ParentColor = False
+      end
+      object EditConstante: TEdit
+        Left = 16
+        Height = 27
+        Top = 35
+        Width = 195
+        TabOrder = 0
+        Text = '128'
+      end
+      object TrackConstante: TTrackBar
+        Left = 16
+        Height = 30
+        Top = 65
+        Width = 195
+        Max = 255
+        OnChange = TrackConstanteChange
+        Position = 128
+        TabOrder = 1
+      end
+    end
+    object GroupBox5: TGroupBox
+      Left = 10
+      Height = 80
+      Top = 390
+      Width = 230
+      Caption = 'Segunda Imagen'
+      ClientHeight = 60
+      ClientWidth = 226
+      TabOrder = 4
+      object BtnCargarImagen2: TButton
+        Left = 16
+        Height = 30
+        Top = 15
+        Width = 195
+        Caption = 'Cargar Segunda Imagen'
+        OnClick = BtnCargarImagen2Click
+        TabOrder = 0
+      end
+    end
+    object BtnAplicar: TButton
+      Left = 10
+      Height = 35
+      Top = 520
+      Width = 230
+      Caption = 'Aplicar Operación'
+      OnClick = BtnAplicarClick
+      TabOrder = 5
+    end
+    object BtnCerrar: TButton
+      Left = 10
+      Height = 30
+      Top = 560
+      Width = 230
+      Caption = 'Cerrar'
+      OnClick = BtnCerrarClick
+      TabOrder = 6
+    end
+  end
+  object PageControl1: TPageControl
+    Left = 250
+    Height = 600
+    Top = 0
+    Width = 650
+    ActivePage = TabImagen1
+    Align = alClient
+    TabIndex = 0
+    TabOrder = 1
+    object TabImagen1: TTabSheet
+      Caption = 'Imagen 1 (Fuente)'
+      ClientHeight = 568
+      ClientWidth = 642
+      object ImageOriginal: TImage
+        Left = 0
+        Height = 568
+        Top = 0
+        Width = 642
+        Align = alClient
+        Center = True
+        Proportional = True
+        Stretch = True
+      end
+    end
+    object TabImagen2: TTabSheet
+      Caption = 'Imagen 2'
+      ClientHeight = 568
+      ClientWidth = 642
+      object ImageSegunda: TImage
+        Left = 0
+        Height = 568
+        Top = 0
+        Width = 642
+        Align = alClient
+        Center = True
+        Proportional = True
+        Stretch = True
+      end
+    end
+    object TabResultado: TTabSheet
+      Caption = 'Resultado'
+      ClientHeight = 568
+      ClientWidth = 642
+      object ImageResultado: TImage
+        Left = 0
+        Height = 568
+        Top = 0
+        Width = 642
+        Align = alClient
+        Center = True
+        Proportional = True
+        Stretch = True
+      end
+    end
+  end
+  object OpenDialog1: TOpenDialog
+    Filter = 'Archivos de imagen|*.bmp;*.jpg;*.jpeg;*.png|Bitmap (*.bmp)|*.bmp;*.BMP|Todos los archivos|*.*'
+    Left = 400
+    Top = 16
+  end
+end
