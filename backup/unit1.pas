@@ -22,9 +22,10 @@ type
     MenuItem1: TMenuItem;
     Gamma: TMenuItem;
     MenuItem11: TMenuItem;
+    MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
     Histograma: TMenuItem;
-    HSVMode: TMenuItem;
+    HSV: TMenuItem;
     MenuItem5: TMenuItem;
     Binarizacion: TMenuItem;
     Restaurar: TMenuItem;
@@ -37,10 +38,11 @@ type
     procedure AbrirClick(Sender: TObject);
     procedure GrisesClick(Sender: TObject);
     procedure GuardarClick(Sender: TObject);
-    procedure HSVModeClick(Sender: TObject);
+    procedure HSVClick(Sender: TObject);
     procedure BinarizacionClick(Sender: TObject);
     procedure GammaClick(Sender: TObject);
     procedure HistogramaClick(Sender: TObject);
+    procedure MenuItem11Click(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
   end;
 
@@ -113,7 +115,6 @@ begin
   begin
     // En HSV, usar solo el canal V (Value/Brillo)
     ShowMessage('En modo HSV, usa el canal V (Value) para escala de grises');
-    // Puedes implementar una conversión del canal V a escala de grises aquí
   end
   else  // Modo RGB
   begin
@@ -137,6 +138,9 @@ begin
     Exit;
   end;
 
+  // Inicializar tempMatrix
+  SetLength(tempMatrix, 0, 0, 0);
+
   // Configurar el diálogo de guardar
   SaveDialog1.Title := 'Guardar imagen como';
   SaveDialog1.Filter := 'Bitmap (*.bmp)|*.bmp|JPEG (*.jpg)|*.jpg|PNG (*.png)|*.png|Todos los archivos|*.*';
@@ -157,7 +161,6 @@ begin
       // Si estamos en modo HSV, convertir primero a RGB
       if COLOR_MODE = 3 then
       begin
-        SetLength(tempMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
         ImageProcessing.HSVMatrixToRGBMatrix(IMG_HEIGHT, IMG_WIDTH, CONVERTED_HSV_MATRIX, tempMatrix);
         ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, tempMatrix, BMAP);
       end
@@ -211,20 +214,27 @@ begin
   end;
 end;
 
-procedure TForm1.HSVModeClick(Sender: TObject);
+procedure TForm1.HSVClick(Sender: TObject);
 var
   tempMatrix: RGB_MATRIX;
 begin
+  ShowMessage('HSVClick ejecutado - inicio'); // Debug
+  
   if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
   begin
     ShowMessage('Primero debes cargar una imagen');
     Exit;
   end;
 
+  ShowMessage('COLOR_MODE actual: ' + IntToStr(COLOR_MODE)); // Debug
+
+  // Inicializar tempMatrix
+  SetLength(tempMatrix, 0, 0, 0);
+
   if COLOR_MODE = 3 then
   begin
     // Ya estamos en modo HSV, convertir de vuelta a RGB
-    SetLength(tempMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
+    ShowMessage('Convirtiendo HSV a RGB...'); // Debug
     ImageProcessing.HSVMatrixToRGBMatrix(IMG_HEIGHT, IMG_WIDTH, CONVERTED_HSV_MATRIX, tempMatrix);
     MATRIX := tempMatrix;
     ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, MATRIX, BMAP);
@@ -236,16 +246,20 @@ begin
   else
   begin
     // Convertir de RGB a HSV
+    ShowMessage('Convirtiendo RGB a HSV...'); // Debug
     ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
     
     // Convertir de vuelta a RGB solo para visualización
-    SetLength(tempMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
     ImageProcessing.HSVMatrixToRGBMatrix(IMG_HEIGHT, IMG_WIDTH, CONVERTED_HSV_MATRIX, tempMatrix);
     ImageProcessing.CopyMatrixToImage(IMG_HEIGHT, IMG_WIDTH, tempMatrix, BMAP);
     Image1.Picture.Assign(BMAP);
     
     COLOR_MODE := 3;
-    StatusBar1.Panels[0].Text := 'Modo: HSV';
+    ShowMessage('Estableciendo StatusBar...'); // Debug
+    if StatusBar1.Panels.Count > 0 then
+      StatusBar1.Panels[0].Text := 'Modo: HSV'
+    else
+      ShowMessage('Error: StatusBar no tiene paneles');
     ShowMessage('Imagen convertida a modo HSV. Los filtros ahora operan en espacio HSV.');
   end;
 end;
@@ -261,13 +275,15 @@ begin
     Exit;
   end;
 
+  // Inicializar tempMatrix
+  SetLength(tempMatrix, 0, 0, 0);
+
   // Crear y mostrar el formulario de binarización
   BinarizeForm := TFormBinarization.Create(Self);
   try
     // En modo HSV, convertir a RGB temporalmente para el formulario
     if COLOR_MODE = 3 then
     begin
-      SetLength(tempMatrix, IMG_WIDTH, IMG_HEIGHT, 3);
       ImageProcessing.HSVMatrixToRGBMatrix(IMG_HEIGHT, IMG_WIDTH, CONVERTED_HSV_MATRIX, tempMatrix);
       BinarizeForm.SetSourceImage(tempMatrix, IMG_HEIGHT, IMG_WIDTH);
     end
@@ -311,7 +327,6 @@ var
   GammaForm: TFormGammaCorrection;
   tempMatrix: RGB_MATRIX;
   x, y: Integer;
-  h, s, v: Double;
 begin
   if (IMG_WIDTH = 0) or (IMG_HEIGHT = 0) then
   begin
@@ -356,9 +371,7 @@ begin
           for y := 0 to IMG_HEIGHT - 1 do
           begin
             // Mantener H y S originales, actualizar solo V
-            CONVERTED_HSV_MATRIX[x, y, 0] := CONVERTED_HSV_MATRIX[x, y, 0]; // H (sin cambio)
-            CONVERTED_HSV_MATRIX[x, y, 1] := CONVERTED_HSV_MATRIX[x, y, 1]; // S (sin cambio)
-            CONVERTED_HSV_MATRIX[x, y, 2] := tempMatrix[x, y, 2];            // V (actualizado con gamma)
+            CONVERTED_HSV_MATRIX[x, y, 2] := tempMatrix[x, y, 2]; // V (actualizado con gamma)
           end;
         
         // Actualizar visualización
@@ -469,6 +482,11 @@ end;
 procedure TForm1.HistogramaClick(Sender: TObject);
 begin
   ShowImageHistogram;
+end;
+
+procedure TForm1.MenuItem11Click(Sender: TObject);
+begin
+
 end;
 
 procedure TForm1.RestaurarClick(Sender: TObject);

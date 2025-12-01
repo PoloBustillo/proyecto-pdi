@@ -9,7 +9,7 @@ uses
 
 type
   RGB_MATRIX = array of array of array of byte;
-  HSV_MATRIX = array of array of array of byte;
+  HSV_MATRIX = array of array of array of Double;
   GRAY_SCALE_MATRIX = array of array of Byte;
   BYTE_LUT = array[0..255] of Byte;
   
@@ -27,18 +27,24 @@ procedure CopyMatrixToImage(imageHeight, imageWidth: Integer;
   const matrix: RGB_MATRIX; var B: TBitmap);
 
 { Funciones de conversión de color }
-procedure RGBToHSVByte(r, g, b: Byte; out Hb, Sb, Vb: Byte);
-procedure HSVByteToRGB(Hb, Sb, Vb: Byte; out r, g, b: Byte);
+procedure RGBToHSV(r, g, b: Byte; out H, S, V: Double);
+procedure HSVToRGB(H, S, V: Double; out r, g, b: Byte);
 procedure RGBMatrixToHSVMatrix(imageHeight, imageWidth: Integer;
   const RGB: RGB_MATRIX; var HSV: HSV_MATRIX);
+procedure HSVMatrixToRGBMatrix(imageHeight, imageWidth: Integer;
+  const HSV: HSV_MATRIX; var RGB: RGB_MATRIX);
 
 { Funciones de procesamiento }
 procedure BinarizeMatrix(const src: RGB_MATRIX; var dst: RGB_MATRIX;
   imageHeight, imageWidth: Integer; modeIndex: Integer; threshold: Byte);
 procedure MediumRangeGrayScale(imageHeight, imageWidth: Integer;
   const matrix: RGB_MATRIX; var grayMatrix: RGB_MATRIX);
+procedure HSVToGrayScale(imageHeight, imageWidth: Integer;
+  var hsvMatrix: HSV_MATRIX);
 procedure ApplyGammaCorrection(var matrix: RGB_MATRIX; imageHeight, 
   imageWidth: Integer; gamma: Double);
+procedure ApplyGammaToHSVValue(imageHeight, imageWidth: Integer;
+  const rgbResult: RGB_MATRIX; var hsvMatrix: HSV_MATRIX);
 procedure ApplyContrast(var matrix: RGB_MATRIX; imageHeight, imageWidth: Integer;
   methodIndex: Integer; percentile: Double);
 
@@ -108,9 +114,9 @@ begin
   end;
 end;
 
-procedure RGBToHSVByte(r, g, b: Byte; out Hb, Sb, Vb: Byte);
+procedure RGBToHSV(r, g, b: Byte; out H, S, V: Double);
 var
-  rf, gf, bf, cmax, cmin, delta, H, S, V: Double;
+  rf, gf, bf, cmax, cmin, delta: Double;
 begin
   rf := r / 255.0;
   gf := g / 255.0;
@@ -120,12 +126,16 @@ begin
   cmin := Min(rf, Min(gf, bf));
   delta := cmax - cmin;
 
+  // V: 0.0 - 1.0
   V := cmax;
+  
+  // S: 0.0 - 1.0
   if cmax = 0 then
     S := 0
   else
     S := delta / cmax;
 
+  // H: 0.0 - 360.0 grados
   if delta = 0 then
     H := 0
   else
@@ -137,29 +147,26 @@ begin
     else
       H := 4.0 + (rf - gf) / delta;
 
-    H := H * 60;
+    H := H * 60.0;
     if H < 0 then
-      H := H + 360;
+      H := H + 360.0;
   end;
-
-  Hb := Round((H / 360) * 255);
-  Sb := Round(S * 255);
-  Vb := Round(V * 255);
 end;
 
-procedure HSVByteToRGB(Hb, Sb, Vb: Byte; out r, g, b: Byte);
+procedure HSVToRGB(H, S, V: Double; out r, g, b: Byte);
 var
-  H, S, V: Double;
   C, X, m: Double;
   Hp: Double;
   Rp, Gp, Bp: Double;
+  rVal, gVal, bVal: Double;
 begin
-  H := (Hb / 255.0) * 360.0;
-  S := Sb / 255.0;
-  V := Vb / 255.0;
+  // H: 0.0 - 360.0 grados
+  // S: 0.0 - 1.0
+  // V: 0.0 - 1.0
+  
   C := V * S;
   Hp := H / 60.0;
-  X := C * (1 - Abs(Frac(Hp) * 2 - 1));
+  X := C * (1.0 - Abs(Frac(Hp) * 2.0 - 1.0));
   
   if (Hp >= 0) and (Hp < 1) then
   begin
@@ -187,16 +194,26 @@ begin
   end;
   
   m := V - C;
-  r := Byte(Round((Rp + m) * 255));
-  g := Byte(Round((Gp + m) * 255));
-  b := Byte(Round((Bp + m) * 255));
+  rVal := (Rp + m) * 255.0;
+  gVal := (Gp + m) * 255.0;
+  bVal := (Bp + m) * 255.0;
+  
+  // Clamp y convertir a byte
+  if rVal < 0 then rVal := 0 else if rVal > 255 then rVal := 255;
+  if gVal < 0 then gVal := 0 else if gVal > 255 then gVal := 255;
+  if bVal < 0 then bVal := 0 else if bVal > 255 then bVal := 255;
+  
+  r := Round(rVal);
+  g := Round(gVal);
+  b := Round(bVal);
 end;
 
 procedure RGBMatrixToHSVMatrix(imageHeight, imageWidth: Integer;
   const RGB: RGB_MATRIX; var HSV: HSV_MATRIX);
 var
   i, j: Integer;
-  r, g, b, h, s, v: Byte;
+  r, g, b: Byte;
+  h, s, v: Double;
 begin
   SetLength(HSV, imageWidth, imageHeight, 3);
   for i := 0 to imageHeight - 1 do
@@ -205,10 +222,31 @@ begin
       r := RGB[j, i, 0];
       g := RGB[j, i, 1];
       b := RGB[j, i, 2];
-      RGBToHSVByte(r, g, b, h, s, v);
-      HSV[j, i, 0] := h;
-      HSV[j, i, 1] := s;
-      HSV[j, i, 2] := v;
+      RGBToHSV(r, g, b, h, s, v);
+      HSV[j, i, 0] := h;  // H: 0.0 - 360.0
+      HSV[j, i, 1] := s;  // S: 0.0 - 1.0
+      HSV[j, i, 2] := v;  // V: 0.0 - 1.0
+    end;
+end;
+
+procedure HSVMatrixToRGBMatrix(imageHeight, imageWidth: Integer;
+  const HSV: HSV_MATRIX; var RGB: RGB_MATRIX);
+var
+  i, j: Integer;
+  r, g, b: Byte;
+  h, s, v: Double;
+begin
+  SetLength(RGB, imageWidth, imageHeight, 3);
+  for i := 0 to imageHeight - 1 do
+    for j := 0 to imageWidth - 1 do
+    begin
+      h := HSV[j, i, 0];  // H: 0.0 - 360.0
+      s := HSV[j, i, 1];  // S: 0.0 - 1.0
+      v := HSV[j, i, 2];  // V: 0.0 - 1.0
+      HSVToRGB(h, s, v, r, g, b);
+      RGB[j, i, 0] := r;
+      RGB[j, i, 1] := g;
+      RGB[j, i, 2] := b;
     end;
 end;
 
@@ -283,6 +321,25 @@ begin
     end;
 end;
 
+procedure HSVToGrayScale(imageHeight, imageWidth: Integer;
+  var hsvMatrix: HSV_MATRIX);
+var
+  x, y: Integer;
+begin
+  if (imageWidth = 0) or (imageHeight = 0) then
+    Exit;
+    
+  // En HSV, convertir a escala de grises estableciendo S=0
+  // Esto elimina todo el color, manteniendo solo el brillo (V)
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+    begin
+      hsvMatrix[x, y, 0] := 0;   // H (Matiz) = 0
+      hsvMatrix[x, y, 1] := 0;   // S (Saturación) = 0 (sin color -> escala de grises)
+      // hsvMatrix[x, y, 2] permanece sin cambios (mantener brillo V original)
+    end;
+end;
+
 procedure BuildGammaLUT(gamma: Double; var lut: BYTE_LUT);
 var
   i: Integer;
@@ -319,6 +376,24 @@ begin
     for y := 0 to imageHeight - 1 do
       for k := 0 to 2 do
         matrix[x, y, k] := lut[matrix[x, y, k]];
+end;
+
+procedure ApplyGammaToHSVValue(imageHeight, imageWidth: Integer;
+  const rgbResult: RGB_MATRIX; var hsvMatrix: HSV_MATRIX);
+var
+  tempHSV: HSV_MATRIX;
+  x, y: Integer;
+begin
+  if (imageWidth = 0) or (imageHeight = 0) then
+    Exit;
+    
+  // Convertir el resultado RGB (con gamma aplicado) a HSV temporal
+  RGBMatrixToHSVMatrix(imageHeight, imageWidth, rgbResult, tempHSV);
+  
+  // Copiar solo el canal V del resultado, mantener H y S originales
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      hsvMatrix[x, y, 2] := tempHSV[x, y, 2]; // Solo actualizar V (canal de brillo)
 end;
 
 function PercentileFromHist(const hist: array of Integer; total: Integer; 
@@ -365,7 +440,10 @@ begin
       hist[i] := 0;
     for x := 0 to imageWidth - 1 do
       for y := 0 to imageHeight - 1 do
-        Inc(hist[HSVtmp[x, y, 2]]);
+      begin
+        // V está en rango 0.0-1.0, convertir a 0-255 para el histograma
+        Inc(hist[Round(HSVtmp[x, y, 2] * 255.0)]);
+      end;
         
     total := imageWidth * imageHeight;
     
@@ -401,8 +479,9 @@ begin
     for x := 0 to imageWidth - 1 do
       for y := 0 to imageHeight - 1 do
       begin
-        HSVtmp[x, y, 2] := lut[HSVtmp[x, y, 2]];
-        HSVByteToRGB(HSVtmp[x, y, 0], HSVtmp[x, y, 1], HSVtmp[x, y, 2], r, g, b);
+        // Aplicar LUT al canal V (convertir de 0.0-1.0 a 0-255, aplicar LUT, volver a 0.0-1.0)
+        HSVtmp[x, y, 2] := lut[Round(HSVtmp[x, y, 2] * 255.0)] / 255.0;
+        HSVToRGB(HSVtmp[x, y, 0], HSVtmp[x, y, 1], HSVtmp[x, y, 2], r, g, b);
         matrix[x, y, 0] := r;
         matrix[x, y, 1] := g;
         matrix[x, y, 2] := b;
