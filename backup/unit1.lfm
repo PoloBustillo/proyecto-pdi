@@ -3,14 +3,20 @@ object Form1: TForm1
   Height = 650
   Top = 225
   Width = 951
+  Align = alClient
+  AllowDropFiles = True
+  AlphaBlendValue = 200
   Caption = 'Acceso-Scanline'
   ClientHeight = 630
   ClientWidth = 951
   Constraints.MinHeight = 650
   Constraints.MinWidth = 900
+  FormStyle = fsMDIForm
   Menu = MainMenu1
   OnCreate = FormCreate
+  OnDropFiles = DropOpen
   LCLVersion = '2.0.12.0'
+  WindowState = wsFullScreen
   object StatusBar1: TStatusBar
     Left = 0
     Height = 23

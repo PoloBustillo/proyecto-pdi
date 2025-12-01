@@ -54,9 +54,8 @@ type
     procedure ANDOperatorClick(Sender: TObject);
     procedure ContrasteReducirClick(Sender: TObject);
     procedure DiferenciaClick(Sender: TObject);
-    procedure DIVOperatorClick(Sender: TObject);
+    procedure DropOpen(Sender: TObject; const FileNames: array of String);
     procedure EscalaMenosClick(Sender: TObject);
-    procedure EXPClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure AbrirClick(Sender: TObject);
     procedure FourierClick(Sender: TObject);
@@ -128,6 +127,11 @@ begin
   
   // Sincronizar matriz HSV
   ImageProcessing.RGBMatrixToHSVMatrix(IMG_HEIGHT, IMG_WIDTH, MATRIX, CONVERTED_HSV_MATRIX);
+end;
+
+procedure TForm1.DropOpen(Sender: TObject; const FileNames: array of String);
+begin
+     ShowMessage('DROP DROP');
 end;
 
 procedure TForm1.EscalaMenosClick(Sender: TObject);
