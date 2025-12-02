@@ -69,7 +69,7 @@ procedure TexturaCodificada(imageHeight, imageWidth: Integer;
 procedure EscalarArribaBilineal(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
-procedure EscalarAbajoBilineal(imageHeight, imageWidth: Integer;
+procedure ReducirEscalaBilineal(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
 procedure RotarDerecha90(imageHeight, imageWidth: Integer;
@@ -1079,7 +1079,7 @@ begin
 end;
 
 { Reducción de escala con factor ½ usando interpolación bilineal }
-procedure EscalarAbajoBilineal(imageHeight, imageWidth: Integer;
+procedure ReducirEscalaBilineal(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
 var

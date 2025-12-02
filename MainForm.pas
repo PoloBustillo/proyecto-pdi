@@ -52,7 +52,6 @@ type
     StatusBar1: TStatusBar;
 
     procedure ALUClick(Sender: TObject);
-    procedure ANDOperatorClick(Sender: TObject);
     procedure ContrasteReducirClick(Sender: TObject);
     procedure DiferenciaClick(Sender: TObject);
     procedure DropOpen(Sender: TObject; const FileNames: array of String);
@@ -68,6 +67,7 @@ type
     procedure HistogramaClick(Sender: TObject);
     procedure ContrasteClick(Sender: TObject);
     procedure EscalaMasClick(Sender: TObject);
+    procedure RestartClick(Sender: TObject);
     procedure SuavizadoClick(Sender: TObject);
     procedure PrewittClick(Sender: TObject);
     procedure RestaurarClick(Sender: TObject);
@@ -259,7 +259,7 @@ begin
   end;
 
   // Aplicar reducción de escala con interpolación bilineal
-  ImageProcessing.EscalarAbajoBilineal(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
+  ImageProcessing.ReducirEscalaBilineal(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
   ActualizarImagenConDimensiones(resultMatrix, newWidth, newHeight);
 end;
 
@@ -284,11 +284,6 @@ begin
       end;
 
   MostrarImagen;
-end;
-
-procedure TForm1.ANDOperatorClick(Sender: TObject);
-begin
-
 end;
 
 procedure TForm1.ALUClick(Sender: TObject);
@@ -374,8 +369,8 @@ begin
     ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
     ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
     Image1.Picture.Assign(MAPA_BITS);
-    
-    ShowMessage('Escala de grises aplicada en modo HSV (S=0, preservando V)');
+    MODO_COLOR := 2;
+    ShowMessage('Escala de grises aplicada en modo HSV (S=0)');
   end
   else  // Modo RGB
   begin
@@ -420,6 +415,11 @@ begin
       begin
         // En modo HSV: convertir MATRIZ_HSV a MATRIZ (RGB) para guardar
         ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+      end
+      else if MODO_COLOR = 2 then
+      begin
+        // En modo escala de grises: copiar MATRIZ_GRISES a MATRIZ para guardar
+        MATRIZ := MATRIZ_GRISES;
       end;
       
       // Actualizar MAPA_BITS con MATRIZ (siempre RGB en este punto)
@@ -657,6 +657,20 @@ begin
   // Aplicar aumento de escala con interpolación bilineal
   ImageProcessing.EscalarArribaBilineal(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
   ActualizarImagenConDimensiones(resultMatrix, newWidth, newHeight);
+end;
+
+procedure TForm1.RestartClick(Sender: TObject);
+begin
+  // Restaurar la imagen a su estado original cargado desde archivo
+  if not ImagenCargada then Exit;
+
+  // Copiar la matriz original a la matriz actual y actualizar la imagen
+  ActualizarImagen(MATRIZ_RESPALDO);
+  MODO_COLOR := 1; // Volver al modo color original (RGB)
+  
+  // Actualizar StatusBar y MenuItem
+  StatusBar1.Panels[0].Text := 'Modo: RGB';
+  HSV.Caption := 'Cambiar a HSV';
 end;
 
 procedure TForm1.SuavizadoClick(Sender: TObject);

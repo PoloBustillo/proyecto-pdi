@@ -152,6 +152,7 @@ object Form1: TForm1
         00050303066B0F0E1CE700000057000000035955A80007070D0024234400AAA2
         FF00000000000000000000000000000000000000000000000000
       }
+      OnClick = RestartClick
     end
     object Archivo: TMenuItem
       Caption = 'Archivo'

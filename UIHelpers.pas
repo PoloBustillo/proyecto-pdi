@@ -70,8 +70,6 @@ begin
         Inc(histData.Blue[vByte]);     // Usar canal Azul para V (Brillo)
         Inc(histData.Intensity[vByte]); // Intensidad = V en HSV
       end;
-    
-    ShowMessage('Histograma HSV: Rojo=H (Matiz), Verde=S (Saturación), Azul=V (Brillo)');
   end
   else  // Modo RGB
   begin
@@ -101,8 +99,8 @@ begin
       end;
   end;
 
-  // Mostrar el histograma en el formulario dedicado
-  FormHist.ShowHistogram(histData);
+  // Mostrar el histograma en el formulario dedicado, pasando el modo de color
+  FormHist.ShowHistogram(histData, colorMode);
 end;
 
 { Procedimiento para calcular coordenadas de imagen desde coordenadas del mouse }

@@ -22,7 +22,7 @@ type
   private
 
   public
-    procedure ShowHistogram(const histData: THistogramData);
+    procedure ShowHistogram(const histData: THistogramData; colorMode: Integer = 0);
   end;
 
 var
@@ -74,10 +74,25 @@ begin
   end;
 end;
 
-procedure TFormHist.ShowHistogram(const histData: THistogramData);
+procedure TFormHist.ShowHistogram(const histData: THistogramData; colorMode: Integer = 0);
 var
   i: Integer;
 begin
+  // Configurar las leyendas según el modo de color
+  if colorMode = 3 then  // Modo HSV
+  begin
+    Chart1LineSeries2.Title := 'Matiz (H)';
+    Chart1LineSeries3.Title := 'Saturación (S)';
+    Chart1LineSeries4.Title := 'Brillo (V)';
+  end
+  else  // Modo RGB
+  begin
+    Chart1LineSeries2.Title := 'Rojo';
+    Chart1LineSeries3.Title := 'Verde';
+    Chart1LineSeries4.Title := 'Azul';
+  end;
+  Chart1LineSeries1.Title := 'Intensidad';
+  
   // Limpiar series
   Chart1LineSeries1.Clear;
   Chart1LineSeries2.Clear;
