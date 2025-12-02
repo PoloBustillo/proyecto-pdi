@@ -21,76 +21,76 @@ type
   end;
 
 { Funciones de conversión de imágenes }
-procedure CopyImageToMatrix(imageHeight, imageWidth: Integer; B: TBitmap;
+procedure CopiarImagenAMatriz(imageHeight, imageWidth: Integer; B: TBitmap;
   var matrix: RGB_MATRIX);
-procedure CopyMatrixToImage(imageHeight, imageWidth: Integer; 
+procedure CopiarMatrizAImagen(imageHeight, imageWidth: Integer; 
   const matrix: RGB_MATRIX; var B: TBitmap);
 
 { Funciones de conversión de color }
-procedure RGBToHSV(r, g, b: Byte; out H, S, V: Double);
-procedure HSVToRGB(H, S, V: Double; out r, g, b: Byte);
-procedure RGBMatrixToHSVMatrix(imageHeight, imageWidth: Integer;
+procedure RGBaHSV(r, g, b: Byte; out H, S, V: Double);
+procedure HSVaRGB(H, S, V: Double; out r, g, b: Byte);
+procedure MatrizRGBaMatrizHSV(imageHeight, imageWidth: Integer;
   const RGB: RGB_MATRIX; var HSV: HSV_MATRIX);
-procedure HSVMatrixToRGBMatrix(imageHeight, imageWidth: Integer;
+procedure MatrizHSVaMatrizRGB(imageHeight, imageWidth: Integer;
   const HSV: HSV_MATRIX; var RGB: RGB_MATRIX);
 
 { Funciones de procesamiento }
-procedure BinarizeMatrix(const src: RGB_MATRIX; var dst: RGB_MATRIX;
+procedure BinarizarMatriz(const src: RGB_MATRIX; var dst: RGB_MATRIX;
   imageHeight, imageWidth: Integer; modeIndex: Integer; threshold: Byte);
-procedure MediumRangeGrayScale(imageHeight, imageWidth: Integer;
+procedure EscalaGrisesRangoMedio(imageHeight, imageWidth: Integer;
   const matrix: RGB_MATRIX; var grayMatrix: RGB_MATRIX);
-procedure HSVToGrayScale(imageHeight, imageWidth: Integer;
+procedure HSVaEscalaGrises(imageHeight, imageWidth: Integer;
   var hsvMatrix: HSV_MATRIX);
-procedure ApplyGammaCorrection(var matrix: RGB_MATRIX; imageHeight, 
+procedure AplicarCorreccionGamma(var matrix: RGB_MATRIX; imageHeight, 
   imageWidth: Integer; gamma: Double);
-procedure ApplyGammaToHSVValue(imageHeight, imageWidth: Integer;
+procedure AplicarGammaAValorHSV(imageHeight, imageWidth: Integer;
   const rgbResult: RGB_MATRIX; var hsvMatrix: HSV_MATRIX);
-procedure ApplyContrast(var matrix: RGB_MATRIX; imageHeight, imageWidth: Integer;
+procedure AplicarContraste(var matrix: RGB_MATRIX; imageHeight, imageWidth: Integer;
   methodIndex: Integer; percentile: Double);
-procedure AutoContrast(imageHeight, imageWidth: Integer; var matrix: RGB_MATRIX);
-procedure AutoContrastHSV(imageHeight, imageWidth: Integer; var hsvMatrix: HSV_MATRIX);
+procedure ContrasteAutomatico(imageHeight, imageWidth: Integer; var matrix: RGB_MATRIX);
+procedure ContrasteAutomaticoHSV(imageHeight, imageWidth: Integer; var hsvMatrix: HSV_MATRIX);
 
 { Filtros de detección de bordes }
-procedure EdgeDetectionDifference(imageHeight, imageWidth: Integer; 
+procedure DeteccionBordesDiferencia(imageHeight, imageWidth: Integer; 
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
-procedure EdgeDetectionPrewitt(imageHeight, imageWidth: Integer; 
+procedure DeteccionBordesPrewitt(imageHeight, imageWidth: Integer; 
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
-procedure EdgeDetectionSobel(imageHeight, imageWidth: Integer; 
+procedure DeteccionBordesSobel(imageHeight, imageWidth: Integer; 
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
 
 { Filtros de suavizado y textura }
-procedure TrimmedSmoothing(imageHeight, imageWidth: Integer;
+procedure SuavizadoRecortado(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   maskSize: Integer; trimAmount: Integer);
-procedure EncodedTexture(imageHeight, imageWidth: Integer;
+procedure TexturaCodificada(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
 
 { Transformaciones geométricas }
-procedure ScaleUpBilinear(imageHeight, imageWidth: Integer;
+procedure EscalarArribaBilineal(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
-procedure ScaleDownBilinear(imageHeight, imageWidth: Integer;
+procedure EscalarAbajoBilineal(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
-procedure RotateRight90(imageHeight, imageWidth: Integer;
+procedure RotarDerecha90(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
-procedure RotateLeft90(imageHeight, imageWidth: Integer;
+procedure RotarIzquierda90(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
 
 { Funciones de análisis }
-procedure GenerateHistogram(imageHeight, imageWidth: Integer; 
+procedure GenerarHistograma(imageHeight, imageWidth: Integer; 
   const matrix: RGB_MATRIX; out histData: THistogramData);
-procedure BuildGammaLUT(gamma: Double; var lut: BYTE_LUT);
-function PercentileFromHist(const hist: array of Integer; total: Integer; 
+procedure ConstruirLUTGamma(gamma: Double; var lut: BYTE_LUT);
+function PercentilDeHistograma(const hist: array of Integer; total: Integer; 
   p: Double): Integer;
 
 implementation
 
 { Implementación de funciones de conversión }
 
-procedure CopyImageToMatrix(imageHeight, imageWidth: Integer; B: TBitmap;
+procedure CopiarImagenAMatriz(imageHeight, imageWidth: Integer; B: TBitmap;
   var matrix: RGB_MATRIX);
 var
   i, j, k: Integer;
@@ -118,7 +118,7 @@ begin
   end;
 end;
 
-procedure CopyMatrixToImage(imageHeight, imageWidth: Integer; 
+procedure CopiarMatrizAImagen(imageHeight, imageWidth: Integer; 
   const matrix: RGB_MATRIX; var B: TBitmap);
 var
   i, j, k: Integer;
@@ -145,7 +145,7 @@ begin
   end;
 end;
 
-procedure RGBToHSV(r, g, b: Byte; out H, S, V: Double);
+procedure RGBaHSV(r, g, b: Byte; out H, S, V: Double);
 var
   rf, gf, bf, cmax, cmin, delta: Double;
 begin
@@ -184,7 +184,7 @@ begin
   end;
 end;
 
-procedure HSVToRGB(H, S, V: Double; out r, g, b: Byte);
+procedure HSVaRGB(H, S, V: Double; out r, g, b: Byte);
 var
   C, X, m: Double;
   Hp: Double;
@@ -240,7 +240,7 @@ begin
   b := Round(bVal);
 end;
 
-procedure RGBMatrixToHSVMatrix(imageHeight, imageWidth: Integer;
+procedure MatrizRGBaMatrizHSV(imageHeight, imageWidth: Integer;
   const RGB: RGB_MATRIX; var HSV: HSV_MATRIX);
 var
   i, j: Integer;
@@ -254,14 +254,14 @@ begin
       r := RGB[j, i, 0];
       g := RGB[j, i, 1];
       b := RGB[j, i, 2];
-      RGBToHSV(r, g, b, h, s, v);
+      RGBaHSV(r, g, b, h, s, v);
       HSV[j, i, 0] := h;  // H: 0.0 - 360.0
       HSV[j, i, 1] := s;  // S: 0.0 - 1.0
       HSV[j, i, 2] := v;  // V: 0.0 - 1.0
     end;
 end;
 
-procedure HSVMatrixToRGBMatrix(imageHeight, imageWidth: Integer;
+procedure MatrizHSVaMatrizRGB(imageHeight, imageWidth: Integer;
   const HSV: HSV_MATRIX; var RGB: RGB_MATRIX);
 var
   i, j: Integer;
@@ -275,7 +275,7 @@ begin
       h := HSV[j, i, 0];  // H: 0.0 - 360.0
       s := HSV[j, i, 1];  // S: 0.0 - 1.0
       v := HSV[j, i, 2];  // V: 0.0 - 1.0
-      HSVToRGB(h, s, v, r, g, b);
+      HSVaRGB(h, s, v, r, g, b);
       RGB[j, i, 0] := r;
       RGB[j, i, 1] := g;
       RGB[j, i, 2] := b;
@@ -284,7 +284,7 @@ end;
 
 { Funciones de procesamiento }
 
-procedure BinarizeMatrix(const src: RGB_MATRIX; var dst: RGB_MATRIX;
+procedure BinarizarMatriz(const src: RGB_MATRIX; var dst: RGB_MATRIX;
   imageHeight, imageWidth: Integer; modeIndex: Integer; threshold: Byte);
 var
   x, y: Integer;
@@ -327,7 +327,7 @@ begin
     end;
 end;
 
-procedure MediumRangeGrayScale(imageHeight, imageWidth: Integer;
+procedure EscalaGrisesRangoMedio(imageHeight, imageWidth: Integer;
   const matrix: RGB_MATRIX; var grayMatrix: RGB_MATRIX);
 var
   i, j: Integer;
@@ -353,7 +353,7 @@ begin
     end;
 end;
 
-procedure HSVToGrayScale(imageHeight, imageWidth: Integer;
+procedure HSVaEscalaGrises(imageHeight, imageWidth: Integer;
   var hsvMatrix: HSV_MATRIX);
 var
   x, y: Integer;
@@ -372,7 +372,7 @@ begin
     end;
 end;
 
-procedure BuildGammaLUT(gamma: Double; var lut: BYTE_LUT);
+procedure ConstruirLUTGamma(gamma: Double; var lut: BYTE_LUT);
 var
   i: Integer;
   v: Double;
@@ -394,7 +394,7 @@ begin
   end;
 end;
 
-procedure ApplyGammaCorrection(var matrix: RGB_MATRIX; imageHeight, 
+procedure AplicarCorreccionGamma(var matrix: RGB_MATRIX; imageHeight, 
   imageWidth: Integer; gamma: Double);
 var
   x, y, k: Integer;
@@ -403,14 +403,14 @@ begin
   if (imageWidth = 0) or (imageHeight = 0) then
     Exit;
     
-  BuildGammaLUT(gamma, lut);
+  ConstruirLUTGamma(gamma, lut);
   for x := 0 to imageWidth - 1 do
     for y := 0 to imageHeight - 1 do
       for k := 0 to 2 do
         matrix[x, y, k] := lut[matrix[x, y, k]];
 end;
 
-procedure ApplyGammaToHSVValue(imageHeight, imageWidth: Integer;
+procedure AplicarGammaAValorHSV(imageHeight, imageWidth: Integer;
   const rgbResult: RGB_MATRIX; var hsvMatrix: HSV_MATRIX);
 var
   tempHSV: HSV_MATRIX;
@@ -420,7 +420,7 @@ begin
     Exit;
     
   // Convertir el resultado RGB (con gamma aplicado) a HSV temporal
-  RGBMatrixToHSVMatrix(imageHeight, imageWidth, rgbResult, tempHSV);
+  MatrizRGBaMatrizHSV(imageHeight, imageWidth, rgbResult, tempHSV);
   
   // Copiar solo el canal V del resultado, mantener H y S originales
   for x := 0 to imageWidth - 1 do
@@ -428,7 +428,7 @@ begin
       hsvMatrix[x, y, 2] := tempHSV[x, y, 2]; // Solo actualizar V (canal de brillo)
 end;
 
-function PercentileFromHist(const hist: array of Integer; total: Integer; 
+function PercentilDeHistograma(const hist: array of Integer; total: Integer; 
   p: Double): Integer;
 var
   i: Integer;
@@ -450,7 +450,7 @@ begin
   Result := High(hist);
 end;
 
-procedure ApplyContrast(var matrix: RGB_MATRIX; imageHeight, imageWidth: Integer;
+procedure AplicarContraste(var matrix: RGB_MATRIX; imageHeight, imageWidth: Integer;
   methodIndex: Integer; percentile: Double);
 var
   hist: array[0..255] of Integer;
@@ -466,7 +466,7 @@ begin
   if methodIndex in [0, 1] then
   begin
     // Aplicar en luminancia (HSV)
-    RGBMatrixToHSVMatrix(imageHeight, imageWidth, matrix, HSVtmp);
+    MatrizRGBaMatrizHSV(imageHeight, imageWidth, matrix, HSVtmp);
     
     for i := 0 to 255 do
       hist[i] := 0;
@@ -492,8 +492,8 @@ begin
     end
     else
     begin
-      lowVal := PercentileFromHist(hist, total, percentile);
-      highVal := PercentileFromHist(hist, total, 1.0 - percentile);
+      lowVal := PercentilDeHistograma(hist, total, percentile);
+      highVal := PercentilDeHistograma(hist, total, 1.0 - percentile);
     end;
 
     if highVal <= lowVal then
@@ -513,7 +513,7 @@ begin
       begin
         // Aplicar LUT al canal V (convertir de 0.0-1.0 a 0-255, aplicar LUT, volver a 0.0-1.0)
         HSVtmp[x, y, 2] := lut[Round(HSVtmp[x, y, 2] * 255.0)] / 255.0;
-        HSVToRGB(HSVtmp[x, y, 0], HSVtmp[x, y, 1], HSVtmp[x, y, 2], r, g, b);
+        HSVaRGB(HSVtmp[x, y, 0], HSVtmp[x, y, 1], HSVtmp[x, y, 2], r, g, b);
         matrix[x, y, 0] := r;
         matrix[x, y, 1] := g;
         matrix[x, y, 2] := b;
@@ -521,7 +521,7 @@ begin
   end;
 end;
 
-procedure GenerateHistogram(imageHeight, imageWidth: Integer; 
+procedure GenerarHistograma(imageHeight, imageWidth: Integer; 
   const matrix: RGB_MATRIX; out histData: THistogramData);
 var
   x, y, i: Integer;
@@ -552,7 +552,7 @@ begin
 end;
 
 { Contraste Automático para RGB }
-procedure AutoContrast(imageHeight, imageWidth: Integer; var matrix: RGB_MATRIX);
+procedure ContrasteAutomatico(imageHeight, imageWidth: Integer; var matrix: RGB_MATRIX);
 var
   x, y, c: Integer;
   minVal, maxVal: array[0..2] of Byte;  // Min y Max por canal (R, G, B)
@@ -598,7 +598,7 @@ begin
 end;
 
 { Contraste Automático para HSV (solo canal V) }
-procedure AutoContrastHSV(imageHeight, imageWidth: Integer; var hsvMatrix: HSV_MATRIX);
+procedure ContrasteAutomaticoHSV(imageHeight, imageWidth: Integer; var hsvMatrix: HSV_MATRIX);
 var
   x, y: Integer;
   minV, maxV: Double;
@@ -641,7 +641,7 @@ end;
 { Filtros de Detección de Bordes }
 
 { Detección de bordes por Diferencia (Roberts) }
-procedure EdgeDetectionDifference(imageHeight, imageWidth: Integer; 
+procedure DeteccionBordesDiferencia(imageHeight, imageWidth: Integer; 
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
 var
   x, y: Integer;
@@ -698,7 +698,7 @@ begin
 end;
 
 { Detección de bordes por Prewitt }
-procedure EdgeDetectionPrewitt(imageHeight, imageWidth: Integer; 
+procedure DeteccionBordesPrewitt(imageHeight, imageWidth: Integer; 
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
 var
   x, y, i, j: Integer;
@@ -780,7 +780,7 @@ begin
 end;
 
 { Detección de bordes por Sobel }
-procedure EdgeDetectionSobel(imageHeight, imageWidth: Integer; 
+procedure DeteccionBordesSobel(imageHeight, imageWidth: Integer; 
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
 var
   x, y, i, j: Integer;
@@ -862,7 +862,7 @@ begin
 end;
 
 { Suavizado recortado (Trimmed Mean Smoothing) }
-procedure TrimmedSmoothing(imageHeight, imageWidth: Integer;
+procedure SuavizadoRecortado(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   maskSize: Integer; trimAmount: Integer);
 var
@@ -947,7 +947,7 @@ begin
 end;
 
 { Textura codificada (Local Binary Pattern - LBP) }
-procedure EncodedTexture(imageHeight, imageWidth: Integer;
+procedure TexturaCodificada(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX);
 var
   x, y, c: Integer;
@@ -1021,7 +1021,7 @@ end;
 { Transformaciones Geométricas }
 
 { Aumento de escala con factor 2× usando interpolación bilineal }
-procedure ScaleUpBilinear(imageHeight, imageWidth: Integer;
+procedure EscalarArribaBilineal(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
 var
@@ -1079,7 +1079,7 @@ begin
 end;
 
 { Reducción de escala con factor ½ usando interpolación bilineal }
-procedure ScaleDownBilinear(imageHeight, imageWidth: Integer;
+procedure EscalarAbajoBilineal(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
 var
@@ -1137,7 +1137,7 @@ begin
 end;
 
 { Rotación 90° a la derecha (sentido horario) }
-procedure RotateRight90(imageHeight, imageWidth: Integer;
+procedure RotarDerecha90(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
 var
@@ -1158,7 +1158,7 @@ begin
 end;
 
 { Rotación 90° a la izquierda (sentido antihorario) }
-procedure RotateLeft90(imageHeight, imageWidth: Integer;
+procedure RotarIzquierda90(imageHeight, imageWidth: Integer;
   const srcMatrix: RGB_MATRIX; var dstMatrix: RGB_MATRIX;
   out newWidth, newHeight: Integer);
 var

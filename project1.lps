@@ -9,7 +9,7 @@
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="4"/>
         <CursorPos X="39" Y="5"/>
-        <UsageCount Value="134"/>
+        <UsageCount Value="136"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
@@ -18,16 +18,17 @@
         <ComponentName Value="Form1"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <EditorIndex Value="2"/>
-        <TopLine Value="82"/>
-        <CursorPos X="55" Y="110"/>
-        <UsageCount Value="23"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="276"/>
+        <CursorPos X="63" Y="290"/>
+        <UsageCount Value="25"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="Constants.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="23"/>
+        <UsageCount Value="25"/>
       </Unit2>
       <Unit3>
         <Filename Value="unit1.pas"/>
@@ -74,15 +75,16 @@
         <TopLine Value="34"/>
         <CursorPos X="87" Y="45"/>
         <ComponentState Value="1"/>
-        <UsageCount Value="39"/>
+        <UsageCount Value="40"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit6>
       <Unit7>
         <Filename Value="ImageProcessing.pas"/>
         <EditorIndex Value="7"/>
-        <CursorPos X="3" Y="13"/>
-        <UsageCount Value="39"/>
+        <TopLine Value="406"/>
+        <CursorPos X="3" Y="423"/>
+        <UsageCount Value="40"/>
         <Loaded Value="True"/>
       </Unit7>
       <Unit8>
@@ -91,7 +93,7 @@
         <EditorIndex Value="5"/>
         <TopLine Value="203"/>
         <CursorPos X="3" Y="220"/>
-        <UsageCount Value="38"/>
+        <UsageCount Value="39"/>
         <Loaded Value="True"/>
       </Unit8>
       <Unit9>
@@ -101,7 +103,7 @@
         <ResourceBaseClass Value="Form"/>
         <TopLine Value="110"/>
         <CursorPos X="19" Y="117"/>
-        <UsageCount Value="38"/>
+        <UsageCount Value="39"/>
         <Loaded Value="True"/>
       </Unit9>
       <Unit10>
@@ -115,10 +117,10 @@
       </Unit10>
       <Unit11>
         <Filename Value="UIHelpers.pas"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="3"/>
-        <CursorPos X="16" Y="12"/>
-        <UsageCount Value="16"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="11"/>
+        <CursorPos X="14" Y="28"/>
+        <UsageCount Value="17"/>
         <Loaded Value="True"/>
       </Unit11>
       <Unit12>
@@ -129,12 +131,12 @@
         <EditorIndex Value="1"/>
         <TopLine Value="40"/>
         <CursorPos X="14" Y="53"/>
-        <UsageCount Value="15"/>
+        <UsageCount Value="16"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit12>
     </Units>
-    <JumpHistory Count="20" HistoryIndex="19">
+    <JumpHistory Count="25" HistoryIndex="24">
       <Position1>
         <Filename Value="MainForm.pas"/>
         <Caret Line="86" Column="13" TopLine="58"/>
@@ -215,6 +217,26 @@
         <Filename Value="MainForm.pas"/>
         <Caret Line="110" Column="55" TopLine="82"/>
       </Position20>
+      <Position21>
+        <Filename Value="UIHelpers.pas"/>
+        <Caret Line="12" Column="17"/>
+      </Position21>
+      <Position22>
+        <Filename Value="MainForm.pas"/>
+        <Caret Line="286" Column="7" TopLine="197"/>
+      </Position22>
+      <Position23>
+        <Filename Value="MainForm.pas"/>
+        <Caret Line="287" Column="104" TopLine="210"/>
+      </Position23>
+      <Position24>
+        <Filename Value="ImageProcessing.pas"/>
+        <Caret Line="406" Column="3" TopLine="389"/>
+      </Position24>
+      <Position25>
+        <Filename Value="MainForm.pas"/>
+        <Caret Line="306" Column="82" TopLine="276"/>
+      </Position25>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>

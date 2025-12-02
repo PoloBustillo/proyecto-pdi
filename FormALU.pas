@@ -103,7 +103,7 @@ begin
   try
     bmp.PixelFormat := pf24bit;
     bmp.SetSize(imgWidth, imgHeight);
-    ImageProcessing.CopyMatrixToImage(imgHeight, imgWidth, FSourceMatrix, bmp);
+    ImageProcessing.CopiarMatrizAImagen(imgHeight, imgWidth, FSourceMatrix, bmp);
     ImageOriginal.Picture.Assign(bmp);
   finally
     bmp.Free;
@@ -137,7 +137,7 @@ begin
         bmp.PixelFormat := pf24bit;
       
       SetLength(FSecondMatrix, FSecondWidth, FSecondHeight, 3);
-      ImageProcessing.CopyImageToMatrix(FSecondHeight, FSecondWidth, bmp, FSecondMatrix);
+      ImageProcessing.CopiarImagenAMatriz(FSecondHeight, FSecondWidth, bmp, FSecondMatrix);
       
       ImageSegunda.Picture.Assign(bmp);
       FHasSecondImage := True;
@@ -487,7 +487,7 @@ begin
   try
     bmp.PixelFormat := pf24bit;
     bmp.SetSize(FImageWidth, FImageHeight);
-    ImageProcessing.CopyMatrixToImage(FImageHeight, FImageWidth, resultMatrix, bmp);
+    ImageProcessing.CopiarMatrizAImagen(FImageHeight, FImageWidth, resultMatrix, bmp);
     ImageResultado.Picture.Assign(bmp);
   finally
     bmp.Free;

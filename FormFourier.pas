@@ -82,7 +82,7 @@ begin
   try
     bmp.PixelFormat := pf24bit;
     bmp.SetSize(imgWidth, imgHeight);
-    ImageProcessing.CopyMatrixToImage(imgHeight, imgWidth, FSourceMatrix, bmp);
+    ImageProcessing.CopiarMatrizAImagen(imgHeight, imgWidth, FSourceMatrix, bmp);
     ImageOriginal.Picture.Assign(bmp);
   finally
     bmp.Free;
@@ -273,7 +273,7 @@ begin
   try
     bmp.PixelFormat := pf24bit;
     bmp.SetSize(FImageWidth, FImageHeight);
-    ImageProcessing.CopyMatrixToImage(FImageHeight, FImageWidth, resultMatrix, bmp);
+    ImageProcessing.CopiarMatrizAImagen(FImageHeight, FImageWidth, resultMatrix, bmp);
     ImageEspectro.Picture.Assign(bmp);
   finally
     bmp.Free;
@@ -411,7 +411,7 @@ begin
   try
     bmp.PixelFormat := pf24bit;
     bmp.SetSize(FImageWidth, FImageHeight);
-    ImageProcessing.CopyMatrixToImage(FImageHeight, FImageWidth, resultMatrix, bmp);
+    ImageProcessing.CopiarMatrizAImagen(FImageHeight, FImageWidth, resultMatrix, bmp);
     ImageResultado.Picture.Assign(bmp);
   finally
     bmp.Free;

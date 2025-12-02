@@ -92,7 +92,7 @@ begin
   try
     tmpBmp.PixelFormat := pf24bit;
     tmpBmp.SetSize(AWidth, AHeight);
-    ImageProcessing.CopyMatrixToImage(AHeight, AWidth, FSourceMatrix, tmpBmp);
+    ImageProcessing.CopiarMatrizAImagen(AHeight, AWidth, FSourceMatrix, tmpBmp);
     Image1.Picture.Assign(tmpBmp);
   finally
     tmpBmp.Free;
@@ -126,14 +126,14 @@ begin
         FResultMatrix[x, y, k] := FSourceMatrix[x, y, k];
   
   // Aplicar gamma
-  ImageProcessing.ApplyGammaCorrection(FResultMatrix, FImageHeight, FImageWidth, gammaVal);
+  ImageProcessing.AplicarCorreccionGamma(FResultMatrix, FImageHeight, FImageWidth, gammaVal);
   
   // Mostrar preview
   tmpBmp := TBitmap.Create;
   try
     tmpBmp.PixelFormat := pf24bit;
     tmpBmp.SetSize(FImageWidth, FImageHeight);
-    ImageProcessing.CopyMatrixToImage(FImageHeight, FImageWidth, FResultMatrix, tmpBmp);
+    ImageProcessing.CopiarMatrizAImagen(FImageHeight, FImageWidth, FResultMatrix, tmpBmp);
     Image1.Picture.Assign(tmpBmp);
   finally
     tmpBmp.Free;

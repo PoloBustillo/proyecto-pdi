@@ -101,6 +101,91 @@ begin
     ShowMessage('Primero debes cargar una imagen');
 end;
 
+// Función auxiliar para crear matriz de resultado con dimensiones actuales
+function CrearMatrizResultado: RGB_MATRIX;
+begin
+  SetLength(Result, ANCHO_IMG, ALTO_IMG, 3);
+end;
+
+// Procedimiento auxiliar para actualizar y mostrar la matriz procesada (con nueva matriz)
+procedure ActualizarImagen(const nuevaMatriz: RGB_MATRIX);
+begin
+  MATRIZ := nuevaMatriz;
+  ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+  Form1.Image1.Picture.Assign(MAPA_BITS);
+  // Sincronizar matriz HSV
+  ImageProcessing.MatrizRGBaMatrizHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+end;
+
+// Procedimiento auxiliar para mostrar MATRIZ actual (sin asignar nueva matriz)
+procedure MostrarImagen;
+begin
+  ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+  Form1.Image1.Picture.Assign(MAPA_BITS);
+  // Sincronizar matriz HSV
+  ImageProcessing.MatrizRGBaMatrizHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+end;
+
+// Procedimiento auxiliar para operaciones que cambian dimensiones (escala, rotación)
+procedure ActualizarImagenConDimensiones(const nuevaMatriz: RGB_MATRIX; nuevoAncho, nuevoAlto: Integer);
+begin
+  ANCHO_IMG := nuevoAncho;
+  ALTO_IMG := nuevoAlto;
+  MATRIZ := nuevaMatriz;
+  
+  MAPA_BITS.SetSize(ANCHO_IMG, ALTO_IMG);
+  ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+  Form1.Image1.Picture.Assign(MAPA_BITS);
+  
+  // Actualizar StatusBar
+  Form1.StatusBar1.Panels[6].Text := IntToStr(ALTO_IMG) + 'x' + IntToStr(ANCHO_IMG);
+  
+  // Sincronizar matriz HSV
+  ImageProcessing.MatrizRGBaMatrizHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+end;
+
+// Procedimiento auxiliar para cargar una imagen desde archivo
+procedure CargarImagenDesdeArchivo(const nombreArchivo: string);
+begin
+  // Limpiar matrices anteriores
+  SetLength(MATRIZ, 0, 0, 0);
+  SetLength(MATRIZ_RESPALDO, 0, 0, 0);
+  SetLength(MATRIZ_GRISES, 0, 0, 0);
+  SetLength(MATRIZ_HSV, 0, 0, 0);
+  
+  // Cargar la imagen
+  Form1.Image1.Enabled := True;
+  MAPA_BITS.LoadFromFile(nombreArchivo);
+  ALTO_IMG := MAPA_BITS.Height;
+  ANCHO_IMG := MAPA_BITS.Width;
+  
+  // Asegurar formato de 24 bits
+  if MAPA_BITS.PixelFormat <> pf24bit then
+    MAPA_BITS.PixelFormat := pf24bit;
+  
+  // Actualizar StatusBar con dimensiones
+  Form1.StatusBar1.Panels[6].Text := IntToStr(ALTO_IMG) + 'x' + IntToStr(ANCHO_IMG);
+  
+  // Crear matrices para la imagen
+  SetLength(MATRIZ, ANCHO_IMG, ALTO_IMG, 3);
+  SetLength(MATRIZ_RESPALDO, ANCHO_IMG, ALTO_IMG, 3);
+  
+  // Copiar imagen a las matrices
+  ImageProcessing.CopiarImagenAMatriz(ALTO_IMG, ANCHO_IMG, MAPA_BITS, MATRIZ);
+  ImageProcessing.CopiarImagenAMatriz(ALTO_IMG, ANCHO_IMG, MAPA_BITS, MATRIZ_RESPALDO);
+  
+  // Mostrar imagen
+  Form1.Image1.Picture.Assign(MAPA_BITS);
+  
+  // Inicializar matriz HSV
+  ImageProcessing.MatrizRGBaMatrizHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  
+  // Configurar modo de color inicial
+  MODO_COLOR := 1;
+  Form1.StatusBar1.Panels[0].Text := 'Modo: RGB';
+  Form1.HSV.Caption := 'Cambiar a HSV';
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   MAPA_BITS := TBitmap.Create;
@@ -116,19 +201,11 @@ var
 begin
   if not ImagenCargada then Exit;
 
-  // Crear matriz para el resultado
-  SetLength(resultMatrix, ANCHO_IMG, ALTO_IMG, 3);
+  resultMatrix := CrearMatrizResultado;
   
   // Aplicar detección de bordes por diferencia
-  ImageProcessing.EdgeDetectionDifference(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix);
-  
-  // Actualizar la matriz y la imagen
-  MATRIZ := resultMatrix;
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ImageProcessing.DeteccionBordesDiferencia(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix);
+  ActualizarImagen(resultMatrix);
 end;
 
 procedure TForm1.DropOpen(Sender: TObject; const FileNames: array of String);
@@ -156,43 +233,7 @@ begin
   end;
   
   try
-    // Limpiar matrices anteriores
-    SetLength(MATRIZ, 0, 0, 0);
-    SetLength(MATRIZ_RESPALDO, 0, 0, 0);
-    SetLength(MATRIZ_GRISES, 0, 0, 0);
-    SetLength(MATRIZ_HSV, 0, 0, 0);
-    
-    // Cargar la imagen
-    Image1.Enabled := True;
-    MAPA_BITS.LoadFromFile(FileNames[0]);
-    ALTO_IMG := MAPA_BITS.Height;
-    ANCHO_IMG := MAPA_BITS.Width;
-    
-    // Asegurar formato de 24 bits
-    if MAPA_BITS.PixelFormat <> pf24bit then
-      MAPA_BITS.PixelFormat := pf24bit;
-    
-    // Actualizar StatusBar con dimensiones
-    StatusBar1.Panels[6].Text := IntToStr(ALTO_IMG) + 'x' + IntToStr(ANCHO_IMG);
-    
-    // Crear matrices para la imagen
-    SetLength(MATRIZ, ANCHO_IMG, ALTO_IMG, 3);
-    SetLength(MATRIZ_RESPALDO, ANCHO_IMG, ALTO_IMG, 3);
-    
-    // Copiar imagen a las matrices
-    ImageProcessing.CopyImageToMatrix(ALTO_IMG, ANCHO_IMG, MAPA_BITS, MATRIZ);
-    ImageProcessing.CopyImageToMatrix(ALTO_IMG, ANCHO_IMG, MAPA_BITS, MATRIZ_RESPALDO);
-    
-    // Mostrar imagen
-    Image1.Picture.Assign(MAPA_BITS);
-    
-    // Inicializar matriz HSV
-    ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
-    
-    // Configurar modo de color inicial
-    MODO_COLOR := 1;
-    StatusBar1.Panels[0].Text := 'Modo: RGB';
-    HSV.Caption := 'Cambiar a HSV';
+    CargarImagenDesdeArchivo(FileNames[0]);
     
     // Guardar nombre del archivo en OpenDialog para usar en GuardarClick
     OpenDialog1.FileName := FileNames[0];
@@ -218,22 +259,8 @@ begin
   end;
 
   // Aplicar reducción de escala con interpolación bilineal
-  ImageProcessing.ScaleDownBilinear(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
-  
-  // Actualizar dimensiones e imagen
-  ANCHO_IMG := newWidth;
-  ALTO_IMG := newHeight;
-  MATRIZ := resultMatrix;
-  
-  MAPA_BITS.SetSize(ANCHO_IMG, ALTO_IMG);
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  
-  // Actualizar StatusBar
-  StatusBar1.Panels[6].Text := IntToStr(ALTO_IMG) + 'x' + IntToStr(ANCHO_IMG);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ImageProcessing.EscalarAbajoBilineal(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
+  ActualizarImagenConDimensiones(resultMatrix, newWidth, newHeight);
 end;
 
 
@@ -256,11 +283,7 @@ begin
         MATRIZ[x, y, c] := Byte(newValue);
       end;
 
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  MostrarImagen;
 end;
 
 procedure TForm1.ANDOperatorClick(Sender: TObject);
@@ -280,7 +303,7 @@ begin
     // En modo HSV, convertir a RGB temporalmente para el formulario
     if MODO_COLOR = 3 then
     begin
-      ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+      ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
       ALUForm.SetSourceImage(MATRIZ, ALTO_IMG, ANCHO_IMG);
     end
     else
@@ -306,30 +329,7 @@ begin
   OpenDialog1.Options := [ofFileMustExist, ofEnableSizing, ofViewDetail];
 
   if OpenDialog1.Execute then
-  begin
-    SetLength(MATRIZ, 0, 0, 0);
-    SetLength(MATRIZ_RESPALDO, 0, 0, 0);
-    SetLength(MATRIZ_GRISES, 0, 0, 0);
-    SetLength(MATRIZ_HSV, 0, 0, 0);
-    Image1.Enabled := True;
-    MAPA_BITS.LoadFromFile(OpenDialog1.FileName);
-    ALTO_IMG := MAPA_BITS.Height;
-    ANCHO_IMG := MAPA_BITS.Width;
-    if MAPA_BITS.PixelFormat <> pf24bit then
-      MAPA_BITS.PixelFormat := pf24bit;
-    StatusBar1.Panels[6].Text := IntToStr(ALTO_IMG) + 'x' + IntToStr(ANCHO_IMG);
-    SetLength(MATRIZ, ANCHO_IMG, ALTO_IMG, 3);
-    SetLength(MATRIZ_RESPALDO, ANCHO_IMG, ALTO_IMG, 3);
-    
-    // Usar funciones del módulo ImageProcessing
-    ImageProcessing.CopyImageToMatrix(ALTO_IMG, ANCHO_IMG, MAPA_BITS, MATRIZ);
-    ImageProcessing.CopyImageToMatrix(ALTO_IMG, ANCHO_IMG, MAPA_BITS, MATRIZ_RESPALDO);
-    Image1.Picture.Assign(MAPA_BITS);
-    ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
-    MODO_COLOR := 1;
-    StatusBar1.Panels[0].Text := 'Modo: RGB';
-    HSV.Caption := 'Cambiar a HSV';
-  end;
+    CargarImagenDesdeArchivo(OpenDialog1.FileName);
 end;
 
 procedure TForm1.FourierClick(Sender: TObject);
@@ -344,7 +344,7 @@ begin
     // En modo HSV, convertir a RGB temporalmente para el formulario
     if MODO_COLOR = 3 then
     begin
-      ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+      ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
       FourierForm.SetSourceImage(MATRIZ, ALTO_IMG, ANCHO_IMG);
     end
     else
@@ -368,11 +368,11 @@ begin
   if MODO_COLOR = 3 then  // Modo HSV
   begin
     // Aplicar escala de grises en HSV
-    ImageProcessing.HSVToGrayScale(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV);
+    ImageProcessing.HSVaEscalaGrises(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV);
     
     // Convertir HSV a RGB en MATRIZ para visualización en monitor
-    ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
-    ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+    ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+    ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
     Image1.Picture.Assign(MAPA_BITS);
     
     ShowMessage('Escala de grises aplicada en modo HSV (S=0, preservando V)');
@@ -380,8 +380,8 @@ begin
   else  // Modo RGB
   begin
     // Usar función del módulo ImageProcessing para RGB
-    ImageProcessing.MediumRangeGrayScale(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_GRISES);
-    ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ_GRISES, MAPA_BITS);
+    ImageProcessing.EscalaGrisesRangoMedio(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_GRISES);
+    ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ_GRISES, MAPA_BITS);
     Image1.Picture.Assign(MAPA_BITS);
     MODO_COLOR := 2;
   end;
@@ -419,11 +419,11 @@ begin
       if MODO_COLOR = 3 then
       begin
         // En modo HSV: convertir MATRIZ_HSV a MATRIZ (RGB) para guardar
-        ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+        ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
       end;
       
       // Actualizar MAPA_BITS con MATRIZ (siempre RGB en este punto)
-      ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+      ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
       
       // Obtener la extensión del archivo
       extension := LowerCase(ExtractFileExt(SaveDialog1.FileName));
@@ -476,8 +476,8 @@ begin
   if MODO_COLOR = 3 then
   begin
     // Convertir HSV de vuelta a RGB (MATRIZ_HSV → MATRIZ)
-    ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
-    ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+    ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+    ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
     Image1.Picture.Assign(MAPA_BITS);
     MODO_COLOR := 1;
     StatusBar1.Panels[0].Text := 'Modo: RGB';
@@ -487,11 +487,11 @@ begin
   else
   begin
     // Convertir RGB a HSV (MATRIZ → MATRIZ_HSV)
-    ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+    ImageProcessing.MatrizRGBaMatrizHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
     
     // Actualizar MATRIZ con la representación RGB para display (monitor requiere RGB)
-    ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
-    ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+    ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+    ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
     Image1.Picture.Assign(MAPA_BITS);
     
     MODO_COLOR := 3;
@@ -513,7 +513,7 @@ begin
     // En modo HSV, convertir a RGB temporalmente para el formulario
     if MODO_COLOR = 3 then
     begin
-      ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+      ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
       BinarizeForm.SetSourceImage(MATRIZ, ALTO_IMG, ANCHO_IMG);
     end
     else
@@ -531,17 +531,17 @@ begin
       if MODO_COLOR = 3 then
       begin
         // En modo HSV, convertir resultado RGB de vuelta a HSV
-        ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+        ImageProcessing.MatrizRGBaMatrizHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
         // Actualizar MATRIZ con representación RGB para visualización
-        ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+        ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
       end
       else
       begin
         // En modo RGB, sincronizar MATRIZ_HSV
-        ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+        ImageProcessing.MatrizRGBaMatrizHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
       end;
       
-      ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+      ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
       Image1.Picture.Assign(MAPA_BITS);
     end;
   finally
@@ -562,7 +562,7 @@ begin
     if MODO_COLOR = 3 then
     begin
       // En modo HSV: convertir a RGB para el formulario
-      ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+      ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
       GammaForm.SetSourceImage(MATRIZ, ALTO_IMG, ANCHO_IMG);
       
       ShowMessage('En modo HSV, la corrección Gamma se aplicará al canal V (Brillo) solamente, ' +
@@ -583,18 +583,18 @@ begin
       if MODO_COLOR = 3 then
       begin
         // En modo HSV: aplicar gamma solo al canal V, preservando H y S
-        ImageProcessing.ApplyGammaToHSVValue(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+        ImageProcessing.AplicarGammaAValorHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
         
         // Actualizar MATRIZ con representación RGB para visualización
-        ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+        ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
       end
       else
       begin
         // En modo RGB: sincronizar MATRIZ_HSV
-        ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+        ImageProcessing.MatrizRGBaMatrizHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
       end;
       
-      ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+      ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
       Image1.Picture.Assign(MAPA_BITS);
     end;
   finally
@@ -621,22 +621,22 @@ begin
   if MODO_COLOR = 3 then  // Modo HSV
   begin
     // Aplicar contraste automático solo al canal V (brillo)
-    ImageProcessing.AutoContrastHSV(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV);
+    ImageProcessing.ContrasteAutomaticoHSV(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV);
     
     // Convertir HSV a RGB para visualización
-    ImageProcessing.HSVMatrixToRGBMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
-    ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+    ImageProcessing.MatrizHSVaMatrizRGB(ALTO_IMG, ANCHO_IMG, MATRIZ_HSV, MATRIZ);
+    ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
     Image1.Picture.Assign(MAPA_BITS);
   end
   else  // Modo RGB
   begin
     // Aplicar contraste automático a cada canal RGB independientemente
-    ImageProcessing.AutoContrast(ALTO_IMG, ANCHO_IMG, MATRIZ);
-    ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
+    ImageProcessing.ContrasteAutomatico(ALTO_IMG, ANCHO_IMG, MATRIZ);
+    ImageProcessing.CopiarMatrizAImagen(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
     Image1.Picture.Assign(MAPA_BITS);
     
     // Sincronizar matriz HSV
-    ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+    ImageProcessing.MatrizRGBaMatrizHSV(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
   end;
 end;
 
@@ -655,22 +655,8 @@ begin
   end;
 
   // Aplicar aumento de escala con interpolación bilineal
-  ImageProcessing.ScaleUpBilinear(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
-  
-  // Actualizar dimensiones e imagen
-  ANCHO_IMG := newWidth;
-  ALTO_IMG := newHeight;
-  MATRIZ := resultMatrix;
-  
-  MAPA_BITS.SetSize(ANCHO_IMG, ALTO_IMG);
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  
-  // Actualizar StatusBar
-  StatusBar1.Panels[6].Text := IntToStr(ALTO_IMG) + 'x' + IntToStr(ANCHO_IMG);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ImageProcessing.EscalarArribaBilineal(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
+  ActualizarImagenConDimensiones(resultMatrix, newWidth, newHeight);
 end;
 
 procedure TForm1.SuavizadoClick(Sender: TObject);
@@ -704,19 +690,11 @@ begin
     Exit;
   end;
 
-  // Crear matriz para el resultado
-  SetLength(resultMatrix, ANCHO_IMG, ALTO_IMG, 3);
+  resultMatrix := CrearMatrizResultado;
   
   // Aplicar suavizado recortado
-  ImageProcessing.TrimmedSmoothing(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, maskSize, trimAmount);
-  
-  // Actualizar la matriz y la imagen
-  MATRIZ := resultMatrix;
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ImageProcessing.SuavizadoRecortado(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, maskSize, trimAmount);
+  ActualizarImagen(resultMatrix);
   
   ShowMessage(Format('Suavizado aplicado: máscara %d×%d, descartando %d valores extremos', [maskSize, maskSize, trimAmount]));
 end;
@@ -728,19 +706,11 @@ var
 begin
   if not ImagenCargada then Exit;
 
-  // Crear matriz para el resultado
-  SetLength(resultMatrix, ANCHO_IMG, ALTO_IMG, 3);
+  resultMatrix := CrearMatrizResultado;
   
   // Aplicar filtro de Prewitt
-  ImageProcessing.EdgeDetectionPrewitt(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix);
-  
-  // Actualizar la matriz y la imagen
-  MATRIZ := resultMatrix;
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ImageProcessing.DeteccionBordesPrewitt(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix);
+  ActualizarImagen(resultMatrix);
 end;
 
 procedure TForm1.RestaurarClick(Sender: TObject);
@@ -749,10 +719,7 @@ begin
   if not ImagenCargada then Exit;
 
   // Copiar la matriz original a la matriz actual y actualizar la imagen
-  MATRIZ := MATRIZ_RESPALDO;
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ActualizarImagen(MATRIZ_RESPALDO);
   MODO_COLOR := 1; // Volver al modo color original (RGB)
   
   // Actualizar StatusBar y MenuItem
@@ -801,22 +768,8 @@ begin
   if not ImagenCargada then Exit;
 
   // Aplicar rotación 90° a la derecha
-  ImageProcessing.RotateRight90(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
-  
-  // Actualizar dimensiones e imagen
-  ANCHO_IMG := newWidth;
-  ALTO_IMG := newHeight;
-  MATRIZ := resultMatrix;
-  
-  MAPA_BITS.SetSize(ANCHO_IMG, ALTO_IMG);
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  
-  // Actualizar StatusBar
-  StatusBar1.Panels[6].Text := IntToStr(ALTO_IMG) + 'x' + IntToStr(ANCHO_IMG);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ImageProcessing.RotarDerecha90(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
+  ActualizarImagenConDimensiones(resultMatrix, newWidth, newHeight);
 end;
 
 procedure TForm1.RotacionIzqClick(Sender: TObject);
@@ -827,22 +780,8 @@ begin
   if not ImagenCargada then Exit;
 
   // Aplicar rotación 90° a la izquierda
-  ImageProcessing.RotateLeft90(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
-  
-  // Actualizar dimensiones e imagen
-  ANCHO_IMG := newWidth;
-  ALTO_IMG := newHeight;
-  MATRIZ := resultMatrix;
-  
-  MAPA_BITS.SetSize(ANCHO_IMG, ALTO_IMG);
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  
-  // Actualizar StatusBar
-  StatusBar1.Panels[6].Text := IntToStr(ALTO_IMG) + 'x' + IntToStr(ANCHO_IMG);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ImageProcessing.RotarIzquierda90(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix, newWidth, newHeight);
+  ActualizarImagenConDimensiones(resultMatrix, newWidth, newHeight);
 end;
 
 procedure TForm1.SobelClick(Sender: TObject);
@@ -851,19 +790,11 @@ var
 begin
   if not ImagenCargada then Exit;
 
-  // Crear matriz para el resultado
-  SetLength(resultMatrix, ANCHO_IMG, ALTO_IMG, 3);
+  resultMatrix := CrearMatrizResultado;
   
   // Aplicar filtro de Sobel
-  ImageProcessing.EdgeDetectionSobel(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix);
-  
-  // Actualizar la matriz y la imagen
-  MATRIZ := resultMatrix;
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ImageProcessing.DeteccionBordesSobel(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix);
+  ActualizarImagen(resultMatrix);
 end;
 
 procedure TForm1.TexturaClick(Sender: TObject);
@@ -872,19 +803,11 @@ var
 begin
   if not ImagenCargada then Exit;
 
-  // Crear matriz para el resultado
-  SetLength(resultMatrix, ANCHO_IMG, ALTO_IMG, 3);
+  resultMatrix := CrearMatrizResultado;
   
   // Aplicar codificación de textura (Local Binary Pattern)
-  ImageProcessing.EncodedTexture(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix);
-  
-  // Actualizar la matriz y la imagen
-  MATRIZ := resultMatrix;
-  ImageProcessing.CopyMatrixToImage(ALTO_IMG, ANCHO_IMG, MATRIZ, MAPA_BITS);
-  Image1.Picture.Assign(MAPA_BITS);
-  
-  // Sincronizar matriz HSV
-  ImageProcessing.RGBMatrixToHSVMatrix(ALTO_IMG, ANCHO_IMG, MATRIZ, MATRIZ_HSV);
+  ImageProcessing.TexturaCodificada(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix);
+  ActualizarImagen(resultMatrix);
   
   ShowMessage('Textura codificada aplicada (Local Binary Pattern en regiones 3×3)');
 end;
