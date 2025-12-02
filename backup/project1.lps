@@ -7,9 +7,10 @@
       <Unit0>
         <Filename Value="project1.lpr"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="3"/>
-        <CursorPos X="39" Y="5"/>
-        <UsageCount Value="136"/>
+        <CursorPos X="50" Y="22"/>
+        <UsageCount Value="137"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
@@ -18,17 +19,17 @@
         <ComponentName Value="Form1"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="4"/>
-        <TopLine Value="623"/>
-        <CursorPos X="96" Y="650"/>
-        <UsageCount Value="25"/>
+        <TopLine Value="651"/>
+        <CursorPos X="90" Y="680"/>
+        <UsageCount Value="26"/>
         <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="Constants.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="25"/>
+        <UsageCount Value="26"/>
       </Unit2>
       <Unit3>
         <Filename Value="unit1.pas"/>
@@ -139,123 +140,123 @@
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="105" Column="20" TopLine="82"/>
+        <Caret Line="144" Column="7" TopLine="127"/>
       </Position1>
       <Position2>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="120" Column="46" TopLine="91"/>
+        <Caret Line="151" Column="83" TopLine="127"/>
       </Position2>
       <Position3>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="136" Column="44" TopLine="119"/>
+        <Caret Line="168" Column="82" TopLine="142"/>
       </Position3>
       <Position4>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="144" Column="7" TopLine="127"/>
+        <Caret Line="171" Column="85" TopLine="146"/>
       </Position4>
       <Position5>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="151" Column="83" TopLine="127"/>
+        <Caret Line="158" Column="96" TopLine="131"/>
       </Position5>
       <Position6>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="168" Column="82" TopLine="142"/>
+        <Caret Line="176" Column="91" TopLine="149"/>
       </Position6>
       <Position7>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="171" Column="85" TopLine="146"/>
+        <Caret Line="173" Column="90" TopLine="156"/>
       </Position7>
       <Position8>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="158" Column="96" TopLine="131"/>
+        <Caret Line="226" Column="73" TopLine="198"/>
       </Position8>
       <Position9>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="176" Column="91" TopLine="149"/>
+        <Caret Line="88" Column="39" TopLine="67"/>
       </Position9>
       <Position10>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="173" Column="90" TopLine="156"/>
+        <Caret Line="230" Column="52" TopLine="209"/>
       </Position10>
       <Position11>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="226" Column="73" TopLine="198"/>
+        <Caret Line="87" Column="16" TopLine="159"/>
       </Position11>
       <Position12>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="88" Column="39" TopLine="67"/>
+        <Caret Line="269" Column="30" TopLine="257"/>
       </Position12>
       <Position13>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="230" Column="52" TopLine="209"/>
+        <Caret Line="256" Column="21" TopLine="238"/>
       </Position13>
       <Position14>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="87" Column="16" TopLine="159"/>
+        <Caret Line="87" Column="3" TopLine="70"/>
       </Position14>
       <Position15>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="269" Column="30" TopLine="257"/>
+        <Caret Line="110" Column="55" TopLine="82"/>
       </Position15>
       <Position16>
-        <Filename Value="MainForm.pas"/>
-        <Caret Line="256" Column="21" TopLine="238"/>
+        <Filename Value="UIHelpers.pas"/>
+        <Caret Line="12" Column="17"/>
       </Position16>
       <Position17>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="87" Column="3" TopLine="70"/>
+        <Caret Line="286" Column="7" TopLine="197"/>
       </Position17>
       <Position18>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="110" Column="55" TopLine="82"/>
+        <Caret Line="287" Column="104" TopLine="210"/>
       </Position18>
       <Position19>
-        <Filename Value="UIHelpers.pas"/>
-        <Caret Line="12" Column="17"/>
+        <Filename Value="ImageProcessing.pas"/>
+        <Caret Line="406" Column="3" TopLine="389"/>
       </Position19>
       <Position20>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="286" Column="7" TopLine="197"/>
+        <Caret Line="306" Column="82" TopLine="276"/>
       </Position20>
       <Position21>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="287" Column="104" TopLine="210"/>
+        <Caret Line="211" TopLine="119"/>
       </Position21>
       <Position22>
         <Filename Value="ImageProcessing.pas"/>
-        <Caret Line="406" Column="3" TopLine="389"/>
+        <Caret Line="72" Column="31" TopLine="55"/>
       </Position22>
       <Position23>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="306" Column="82" TopLine="276"/>
+        <Caret Line="358" TopLine="384"/>
       </Position23>
       <Position24>
-        <Filename Value="MainForm.pas"/>
-        <Caret Line="211" TopLine="119"/>
+        <Filename Value="UIHelpers.pas"/>
+        <Caret Line="93" Column="25" TopLine="89"/>
       </Position24>
       <Position25>
-        <Filename Value="ImageProcessing.pas"/>
-        <Caret Line="72" Column="31" TopLine="55"/>
+        <Filename Value="MainForm.pas"/>
+        <Caret Line="46" Column="104" TopLine="465"/>
       </Position25>
       <Position26>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="358" TopLine="384"/>
+        <Caret Line="600" Column="11" TopLine="384"/>
       </Position26>
       <Position27>
-        <Filename Value="UIHelpers.pas"/>
-        <Caret Line="93" Column="25" TopLine="89"/>
+        <Filename Value="MainForm.pas"/>
+        <Caret Line="570" Column="36" TopLine="568"/>
       </Position27>
       <Position28>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="46" Column="104" TopLine="465"/>
+        <Caret Line="651" Column="96" TopLine="624"/>
       </Position28>
       <Position29>
         <Filename Value="MainForm.pas"/>
-        <Caret Line="600" Column="11" TopLine="384"/>
+        <Caret Line="680" Column="90" TopLine="651"/>
       </Position29>
       <Position30>
-        <Filename Value="MainForm.pas"/>
-        <Caret Line="570" Column="36" TopLine="568"/>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="21"/>
       </Position30>
     </JumpHistory>
     <RunParams>

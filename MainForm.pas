@@ -819,11 +819,11 @@ begin
 
   resultMatrix := CrearMatrizResultado;
   
-  // Aplicar codificación de textura (Local Binary Pattern)
+  // Aplicar codificación de textura
   ImageProcessing.TexturaCodificada(ALTO_IMG, ANCHO_IMG, MATRIZ, resultMatrix);
   ActualizarImagen(resultMatrix);
   
-  ShowMessage('Textura codificada aplicada (Local Binary Pattern en regiones 3×3)');
+  ShowMessage('Textura codificada aplicada (en regiones 3×3)');
 end;
 
 

@@ -11,6 +11,7 @@ type
   RGB_MATRIX = array of array of array of byte;
   HSV_MATRIX = array of array of array of Double;
   GRAY_SCALE_MATRIX = array of array of Byte;
+  GRAY_MATRIX = array of array of Byte;  // Tipo auxiliar para matrices de grises
   BYTE_LUT = array[0..255] of Byte;
   
   THistogramData = record
@@ -87,6 +88,68 @@ function PercentilDeHistograma(const hist: array of Integer; total: Integer;
   p: Double): Integer;
 
 implementation
+
+{ Funciones auxiliares privadas para evitar código duplicado }
+
+// Convertir un píxel RGB a valor de luminancia (escala de grises)
+function RGBaLuminancia(r, g, b: Byte): Byte; inline;
+begin
+  Result := Round(0.299 * r + 0.587 * g + 0.114 * b);
+end;
+
+// Asignar un valor gris a los tres canales de un píxel
+procedure AsignarValorGris(var matriz: RGB_MATRIX; x, y: Integer; valor: Byte); inline;
+begin
+  matriz[x, y, 0] := valor;
+  matriz[x, y, 1] := valor;
+  matriz[x, y, 2] := valor;
+end;
+
+// Convertir matriz RGB completa a matriz de grises
+procedure ConvertirMatrizAGrises(imageHeight, imageWidth: Integer;
+  const srcMatrix: RGB_MATRIX; var gray: GRAY_MATRIX);
+var
+  x, y: Integer;
+begin
+  SetLength(gray, imageWidth, imageHeight);
+  for x := 0 to imageWidth - 1 do
+    for y := 0 to imageHeight - 1 do
+      gray[x, y] := RGBaLuminancia(srcMatrix[x, y, 0], srcMatrix[x, y, 1], srcMatrix[x, y, 2]);
+end;
+
+// Rellenar bordes de una matriz con negro
+procedure RellenarBordesConNegro(var matriz: RGB_MATRIX; imageWidth, imageHeight: Integer;
+  bordeIzq, bordeDer, bordeSup, bordeInf: Boolean);
+var
+  x, y: Integer;
+begin
+  if bordeSup then
+    for x := 0 to imageWidth - 1 do
+      AsignarValorGris(matriz, x, 0, 0);
+      
+  if bordeInf then
+    for x := 0 to imageWidth - 1 do
+      AsignarValorGris(matriz, x, imageHeight - 1, 0);
+      
+  if bordeIzq then
+    for y := 0 to imageHeight - 1 do
+      AsignarValorGris(matriz, 0, y, 0);
+      
+  if bordeDer then
+    for y := 0 to imageHeight - 1 do
+      AsignarValorGris(matriz, imageWidth - 1, y, 0);
+end;
+
+// Limitar valor a rango de byte [0..255]
+function ClampByte(valor: Integer): Byte; inline;
+begin
+  if valor < 0 then
+    Result := 0
+  else if valor > 255 then
+    Result := 255
+  else
+    Result := Byte(valor);
+end;
 
 { Implementación de funciones de conversión }
 
@@ -313,17 +376,9 @@ begin
       end;
 
       if val >= threshold then
-      begin
-        dst[x, y, 0] := 255;
-        dst[x, y, 1] := 255;
-        dst[x, y, 2] := 255;
-      end
+        AsignarValorGris(dst, x, y, 255)
       else
-      begin
-        dst[x, y, 0] := 0;
-        dst[x, y, 1] := 0;
-        dst[x, y, 2] := 0;
-      end;
+        AsignarValorGris(dst, x, y, 0);
     end;
 end;
 
@@ -347,9 +402,7 @@ begin
       maximumValue := Max(red, Max(green, blue));
       minimumValue := Min(red, Min(green, blue));
       gray := (maximumValue + minimumValue) div 2;
-      grayMatrix[i, j, 0] := gray;
-      grayMatrix[i, j, 1] := gray;
-      grayMatrix[i, j, 2] := gray;
+      AsignarValorGris(grayMatrix, i, j, gray);
     end;
 end;
 
@@ -646,21 +699,15 @@ procedure DeteccionBordesDiferencia(imageHeight, imageWidth: Integer;
 var
   x, y: Integer;
   gx, gy, magnitude: Integer;
-  gray: array of array of Byte;
-  val: Byte;
+  gray: GRAY_MATRIX;
 begin
   if (imageWidth <= 1) or (imageHeight <= 1) then
     Exit;
     
   SetLength(dstMatrix, imageWidth, imageHeight, 3);
-  SetLength(gray, imageWidth, imageHeight);
   
   // Convertir a escala de grises usando luminancia
-  for x := 0 to imageWidth - 1 do
-    for y := 0 to imageHeight - 1 do
-      gray[x, y] := Round(0.299 * srcMatrix[x, y, 0] + 
-                          0.587 * srcMatrix[x, y, 1] + 
-                          0.114 * srcMatrix[x, y, 2]);
+  ConvertirMatrizAGrises(imageHeight, imageWidth, srcMatrix, gray);
   
   // Aplicar operador de diferencia (Roberts Cross)
   // Gx = |f(x+1,y+1) - f(x,y)|
@@ -671,30 +718,11 @@ begin
       gx := Abs(gray[x + 1, y + 1] - gray[x, y]);
       gy := Abs(gray[x + 1, y] - gray[x, y + 1]);
       magnitude := gx + gy;
-      
-      if magnitude > 255 then
-        val := 255
-      else
-        val := Byte(magnitude);
-        
-      dstMatrix[x, y, 0] := val;
-      dstMatrix[x, y, 1] := val;
-      dstMatrix[x, y, 2] := val;
+      AsignarValorGris(dstMatrix, x, y, ClampByte(magnitude));
     end;
   
   // Rellenar bordes con negro
-  for x := 0 to imageWidth - 1 do
-  begin
-    dstMatrix[x, imageHeight - 1, 0] := 0;
-    dstMatrix[x, imageHeight - 1, 1] := 0;
-    dstMatrix[x, imageHeight - 1, 2] := 0;
-  end;
-  for y := 0 to imageHeight - 1 do
-  begin
-    dstMatrix[imageWidth - 1, y, 0] := 0;
-    dstMatrix[imageWidth - 1, y, 1] := 0;
-    dstMatrix[imageWidth - 1, y, 2] := 0;
-  end;
+  RellenarBordesConNegro(dstMatrix, imageWidth, imageHeight, False, True, False, True);
 end;
 
 { Detección de bordes por Prewitt }
@@ -703,8 +731,7 @@ procedure DeteccionBordesPrewitt(imageHeight, imageWidth: Integer;
 var
   x, y, i, j: Integer;
   gx, gy, magnitude: Integer;
-  gray: array of array of Byte;
-  val: Byte;
+  gray: GRAY_MATRIX;
   // Máscaras de Prewitt
   kernelX: array[-1..1, -1..1] of Integer = (
     (-1, 0, 1),
@@ -721,14 +748,9 @@ begin
     Exit;
     
   SetLength(dstMatrix, imageWidth, imageHeight, 3);
-  SetLength(gray, imageWidth, imageHeight);
   
   // Convertir a escala de grises usando luminancia
-  for x := 0 to imageWidth - 1 do
-    for y := 0 to imageHeight - 1 do
-      gray[x, y] := Round(0.299 * srcMatrix[x, y, 0] + 
-                          0.587 * srcMatrix[x, y, 1] + 
-                          0.114 * srcMatrix[x, y, 2]);
+  ConvertirMatrizAGrises(imageHeight, imageWidth, srcMatrix, gray);
   
   // Aplicar convolución con máscaras de Prewitt
   for x := 1 to imageWidth - 2 do
@@ -747,36 +769,11 @@ begin
       
       // Magnitud del gradiente: sqrt(Gx² + Gy²) ≈ |Gx| + |Gy|
       magnitude := Abs(gx) + Abs(gy);
-      
-      if magnitude > 255 then
-        val := 255
-      else
-        val := Byte(magnitude);
-        
-      dstMatrix[x, y, 0] := val;
-      dstMatrix[x, y, 1] := val;
-      dstMatrix[x, y, 2] := val;
+      AsignarValorGris(dstMatrix, x, y, ClampByte(magnitude));
     end;
   
   // Rellenar bordes con negro
-  for x := 0 to imageWidth - 1 do
-  begin
-    dstMatrix[x, 0, 0] := 0;
-    dstMatrix[x, 0, 1] := 0;
-    dstMatrix[x, 0, 2] := 0;
-    dstMatrix[x, imageHeight - 1, 0] := 0;
-    dstMatrix[x, imageHeight - 1, 1] := 0;
-    dstMatrix[x, imageHeight - 1, 2] := 0;
-  end;
-  for y := 0 to imageHeight - 1 do
-  begin
-    dstMatrix[0, y, 0] := 0;
-    dstMatrix[0, y, 1] := 0;
-    dstMatrix[0, y, 2] := 0;
-    dstMatrix[imageWidth - 1, y, 0] := 0;
-    dstMatrix[imageWidth - 1, y, 1] := 0;
-    dstMatrix[imageWidth - 1, y, 2] := 0;
-  end;
+  RellenarBordesConNegro(dstMatrix, imageWidth, imageHeight, True, True, True, True);
 end;
 
 { Detección de bordes por Sobel }
@@ -785,8 +782,7 @@ procedure DeteccionBordesSobel(imageHeight, imageWidth: Integer;
 var
   x, y, i, j: Integer;
   gx, gy, magnitude: Integer;
-  gray: array of array of Byte;
-  val: Byte;
+  gray: GRAY_MATRIX;
   // Máscaras de Sobel
   kernelX: array[-1..1, -1..1] of Integer = (
     (-1, 0, 1),
@@ -803,14 +799,9 @@ begin
     Exit;
     
   SetLength(dstMatrix, imageWidth, imageHeight, 3);
-  SetLength(gray, imageWidth, imageHeight);
   
   // Convertir a escala de grises usando luminancia
-  for x := 0 to imageWidth - 1 do
-    for y := 0 to imageHeight - 1 do
-      gray[x, y] := Round(0.299 * srcMatrix[x, y, 0] + 
-                          0.587 * srcMatrix[x, y, 1] + 
-                          0.114 * srcMatrix[x, y, 2]);
+  ConvertirMatrizAGrises(imageHeight, imageWidth, srcMatrix, gray);
   
   // Aplicar convolución con máscaras de Sobel
   for x := 1 to imageWidth - 2 do
@@ -829,36 +820,11 @@ begin
       
       // Magnitud del gradiente: sqrt(Gx² + Gy²) ≈ |Gx| + |Gy|
       magnitude := Abs(gx) + Abs(gy);
-      
-      if magnitude > 255 then
-        val := 255
-      else
-        val := Byte(magnitude);
-        
-      dstMatrix[x, y, 0] := val;
-      dstMatrix[x, y, 1] := val;
-      dstMatrix[x, y, 2] := val;
+      AsignarValorGris(dstMatrix, x, y, ClampByte(magnitude));
     end;
   
   // Rellenar bordes con negro
-  for x := 0 to imageWidth - 1 do
-  begin
-    dstMatrix[x, 0, 0] := 0;
-    dstMatrix[x, 0, 1] := 0;
-    dstMatrix[x, 0, 2] := 0;
-    dstMatrix[x, imageHeight - 1, 0] := 0;
-    dstMatrix[x, imageHeight - 1, 1] := 0;
-    dstMatrix[x, imageHeight - 1, 2] := 0;
-  end;
-  for y := 0 to imageHeight - 1 do
-  begin
-    dstMatrix[0, y, 0] := 0;
-    dstMatrix[0, y, 1] := 0;
-    dstMatrix[0, y, 2] := 0;
-    dstMatrix[imageWidth - 1, y, 0] := 0;
-    dstMatrix[imageWidth - 1, y, 1] := 0;
-    dstMatrix[imageWidth - 1, y, 2] := 0;
-  end;
+  RellenarBordesConNegro(dstMatrix, imageWidth, imageHeight, True, True, True, True);
 end;
 
 { Suavizado recortado (Trimmed Mean Smoothing) }
